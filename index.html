@@ -201,6 +201,16 @@
       pointer-events: none;
     }
 
+    .word-card.pass-flash {
+      border-color: rgba(34,197,94,.42);
+      background: rgba(240,253,244,.97);
+      box-shadow: 0 26px 70px rgba(22,163,74,.22);
+    }
+
+    .word-card.pass-flash::before {
+      background: linear-gradient(135deg, rgba(34,197,94,.14), transparent 54%, rgba(16,185,129,.10));
+    }
+
     #wordDisplay {
       position: relative;
       max-width: 100%;
@@ -229,6 +239,28 @@
     }
 
     .word-card.starred .star-badge { display: block; }
+
+    .pass-feedback {
+      position: absolute;
+      z-index: 4;
+      right: 24px;
+      bottom: 22px;
+      display: none;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 11px;
+      border: 1px solid rgba(34,197,94,.26);
+      border-radius: 999px;
+      color: #166534;
+      background: rgba(240,253,244,.96);
+      box-shadow: 0 10px 24px rgba(22,163,74,.12);
+      font-size: 13px;
+      font-weight: 850;
+      font-variant-numeric: tabular-nums;
+      pointer-events: none;
+    }
+
+    .word-card.pass-flash .pass-feedback { display: inline-flex; }
 
     .timer-panel {
       display: flex;
@@ -349,7 +381,7 @@
       gap: 10px;
     }
 
-    .nav-btn, .star-btn, .delete-btn {
+    .nav-btn, .star-btn, .delete-btn, .buffer-btn {
       min-width: 116px;
       padding: 11px 18px;
       font-weight: 750;
@@ -369,6 +401,23 @@
       color: #b91c1c;
       background: #fff1f2;
       border-color: #fecdd3;
+    }
+
+    .buffer-btn {
+      display: none;
+      color: #166534;
+      background: #f0fdf4;
+      border-color: #bbf7d0;
+    }
+
+    .buffer-btn.visible {
+      display: inline-block;
+    }
+
+    .buffer-btn.off {
+      color: #475569;
+      background: #f8fafc;
+      border-color: #cbd5e1;
     }
 
     .keyboard-hint {
@@ -613,20 +662,26 @@
 
       .controls {
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(4, minmax(0, 1fr));
         width: 100%;
         flex: 0 0 auto;
         gap: 10px;
       }
 
       .nav-btn,
-      .star-btn {
+      .star-btn,
+      .buffer-btn {
         width: 100%;
         min-width: 0;
         height: 56px;
         padding: 0;
         border-radius: 16px;
         font-size: 27px;
+      }
+
+      .buffer-btn {
+        font-size: 13px;
+        line-height: 1.2;
       }
 
       .star-btn {
@@ -688,18 +743,580 @@
         padding-bottom: 4px;
       }
     }
+
+
+    /* ===== 自适应记忆系统 ===== */
+    .memory-toolbar {
+      display: flex;
+      width: min(860px, 100%);
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .memory-toolbar-info {
+      display: flex;
+      min-width: 0;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .memory-state-dot {
+      width: 9px;
+      height: 9px;
+      flex: 0 0 auto;
+      border-radius: 50%;
+      background: #22c55e;
+      box-shadow: 0 0 0 4px rgba(34,197,94,.12);
+    }
+
+    .memory-toolbar.paused .memory-state-dot {
+      background: #94a3b8;
+      box-shadow: 0 0 0 4px rgba(148,163,184,.14);
+    }
+
+    .memory-toolbar-actions {
+      display: flex;
+      flex: 0 0 auto;
+      gap: 8px;
+    }
+
+    .memory-tool-btn {
+      padding: 9px 13px;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      color: #475569;
+      background: rgba(255,255,255,.88);
+      box-shadow: 0 7px 18px rgba(31,41,55,.06);
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .memory-tool-btn.is-paused {
+      color: #92400e;
+      border-color: #fcd34d;
+      background: #fffbeb;
+    }
+
+    .memory-score {
+      position: absolute;
+      z-index: 3;
+      top: 20px;
+      left: 24px;
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      padding: 7px 11px;
+      border: 1px solid rgba(99,102,241,.18);
+      border-radius: 999px;
+      color: var(--primary-dark);
+      background: rgba(238,242,255,.92);
+      box-shadow: 0 7px 18px rgba(79,70,229,.09);
+      font-size: 13px;
+      font-weight: 850;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .memory-score.low {
+      color: #b91c1c;
+      border-color: rgba(239,68,68,.20);
+      background: rgba(254,242,242,.94);
+    }
+
+    .memory-score.medium {
+      color: #9a6700;
+      border-color: rgba(245,158,11,.22);
+      background: rgba(255,251,235,.94);
+    }
+
+    .memory-score.high {
+      color: #166534;
+      border-color: rgba(34,197,94,.22);
+      background: rgba(240,253,244,.94);
+    }
+
+    .memory-times {
+      position: absolute;
+      z-index: 3;
+      top: 18px;
+      right: 22px;
+      display: flex;
+      max-width: 52%;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+      color: #64748b;
+      font-size: 11px;
+      font-weight: 750;
+      line-height: 1.25;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .memory-times-title {
+      color: #94a3b8;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .02em;
+    }
+
+    .memory-times-values {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 4px;
+    }
+
+    .memory-time-chip {
+      padding: 4px 6px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      background: rgba(248,250,252,.94);
+    }
+
+    .memory-time-chip.incorrect {
+      color: #b91c1c;
+      border-color: #fecaca;
+      background: rgba(254,242,242,.96);
+      text-decoration: line-through;
+    }
+
+    .word-card.memory-enabled .star-badge {
+      top: 70px;
+    }
+
+    .memory-modal {
+      position: fixed;
+      z-index: 1000;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(15,23,42,.44);
+      backdrop-filter: blur(6px);
+    }
+
+    .memory-modal.open { display: flex; }
+
+    .memory-modal-dialog {
+      display: flex;
+      width: min(1040px, 100%);
+      max-height: min(760px, calc(100dvh - 48px));
+      flex-direction: column;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.9);
+      border-radius: 24px;
+      background: rgba(255,255,255,.98);
+      box-shadow: 0 32px 90px rgba(15,23,42,.28);
+    }
+
+    .memory-modal-header {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 14px;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .memory-copy-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .memory-copy-btn {
+      padding: 10px 13px;
+      color: white;
+      background: var(--primary);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .memory-copy-btn.secondary {
+      color: #166534;
+      border: 1px solid rgba(34,197,94,.24);
+      background: rgba(240,253,244,.96);
+    }
+
+    .memory-modal-title-wrap {
+      min-width: 0;
+      text-align: center;
+    }
+
+    .memory-modal-title {
+      margin: 0;
+      font-size: 19px;
+      font-weight: 850;
+    }
+
+    .memory-modal-summary {
+      margin: 4px 0 0;
+      overflow: hidden;
+      color: var(--muted);
+      font-size: 12px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .memory-close-btn {
+      width: 40px;
+      height: 40px;
+      padding: 0;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      color: #475569;
+      background: #f8fafc;
+      font-size: 24px;
+      line-height: 1;
+    }
+
+    .memory-board-wrap {
+      overflow: auto;
+      padding: 0 18px 18px;
+    }
+
+    .memory-board {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      font-size: 13px;
+    }
+
+    .memory-board th,
+    .memory-board td {
+      padding: 12px 10px;
+      border-bottom: 1px solid #e8edf4;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .memory-board th {
+      position: sticky;
+      z-index: 2;
+      top: 0;
+      color: #475569;
+      background: rgba(248,250,252,.98);
+      font-size: 11px;
+      font-weight: 850;
+      letter-spacing: .02em;
+      white-space: nowrap;
+    }
+
+    .memory-board-row {
+      position: relative;
+    }
+
+    .memory-board-row::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: var(--memory-fill, 0%);
+      background: rgba(34,197,94,.16);
+      pointer-events: none;
+    }
+
+    .memory-board-row:hover::before {
+      background: rgba(34,197,94,.22);
+    }
+
+    .memory-board-row td {
+      position: relative;
+      z-index: 1;
+      background: transparent;
+    }
+
+    .memory-board-word {
+      max-width: 260px;
+      font-weight: 800;
+      overflow-wrap: anywhere;
+    }
+
+    .memory-board-score {
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .memory-board-times {
+      color: #475569;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.55;
+    }
+
+    .memory-board-empty {
+      padding: 42px 16px !important;
+      color: var(--muted);
+      text-align: center !important;
+    }
+
+    .memory-copy-status {
+      min-height: 20px;
+      padding: 0 18px 12px;
+      color: var(--muted);
+      font-size: 12px;
+      text-align: left;
+    }
+
+    @media (max-width: 700px) {
+      .memory-toolbar {
+        width: 100%;
+        min-height: 36px;
+        flex: 0 0 auto;
+      }
+
+      .memory-toolbar-info {
+        gap: 6px;
+        font-size: 10px;
+      }
+
+      .memory-toolbar-actions { gap: 6px; }
+
+      .memory-tool-btn {
+        padding: 8px 10px;
+        border-radius: 10px;
+        font-size: 10px;
+      }
+
+      .memory-score {
+        top: 13px;
+        left: 14px;
+        min-height: 28px;
+        padding: 6px 9px;
+        font-size: 11px;
+      }
+
+      .memory-times {
+        top: 12px;
+        right: 14px;
+        max-width: 58%;
+        font-size: 9px;
+      }
+
+      .memory-times-title { font-size: 9px; }
+
+      .memory-time-chip {
+        padding: 3px 5px;
+        border-radius: 7px;
+      }
+
+      .word-card.memory-enabled {
+        padding-top: 72px;
+      }
+
+      .word-card.memory-enabled .star-badge {
+        top: 57px;
+        right: 16px;
+        font-size: 27px;
+      }
+
+      .memory-modal {
+        align-items: stretch;
+        padding: 12px;
+      }
+
+      .memory-modal-dialog {
+        width: 100%;
+        max-height: calc(100dvh - 24px);
+        border-radius: 20px;
+      }
+
+      .memory-modal-header {
+        grid-template-columns: auto 1fr auto;
+        gap: 8px;
+        padding: 12px;
+      }
+
+      .memory-copy-actions {
+        max-width: 118px;
+        gap: 6px;
+      }
+
+      .memory-copy-btn {
+        padding: 9px 10px;
+        font-size: 11px;
+      }
+
+      .memory-modal-title { font-size: 16px; }
+      .memory-modal-summary { font-size: 10px; }
+      .memory-close-btn { width: 36px; height: 36px; }
+      .memory-board-wrap { padding: 0 10px 12px; }
+      .memory-board th, .memory-board td { padding: 10px 8px; }
+      .memory-board { min-width: 720px; font-size: 12px; }
+      .memory-copy-status { padding: 0 12px 10px; }
+    }
+
+
+
+    /* ===== 随机智能学习 ===== */
+    .button-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      align-items: stretch;
+    }
+
+    .button-row .primary-btn,
+    .button-row .secondary-btn,
+    .button-row .smart-btn {
+      width: 100%;
+      min-width: 0;
+      min-height: 52px;
+      padding: 11px 10px;
+      white-space: normal;
+      line-height: 1.25;
+    }
+
+    .smart-btn {
+      color: white;
+      font-weight: 800;
+      background: linear-gradient(135deg, #0f766e, #2563eb);
+      box-shadow: 0 9px 22px rgba(15,118,110,.22);
+    }
+
+    .word-card.study-mode {
+      flex-direction: column;
+      gap: 18px;
+      cursor: pointer;
+      touch-action: pan-y;
+    }
+
+    .word-card.test-mode {
+      border-color: rgba(220,38,38,.24);
+      box-shadow: 0 26px 70px rgba(127,29,29,.14);
+    }
+
+    .study-phase-badge {
+      position: absolute;
+      z-index: 4;
+      top: 20px;
+      left: 50%;
+      max-width: 42%;
+      padding: 7px 13px;
+      overflow: hidden;
+      border: 1px solid rgba(79,70,229,.18);
+      border-radius: 999px;
+      color: var(--primary-dark);
+      background: rgba(238,242,255,.94);
+      font-size: 12px;
+      font-weight: 900;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      transform: translateX(-50%);
+    }
+
+    .test-mode .study-phase-badge {
+      color: #b91c1c;
+      border-color: #fecaca;
+      background: rgba(254,242,242,.96);
+      font-size: 15px;
+    }
+
+    .study-chinese {
+      position: relative;
+      z-index: 2;
+      max-width: 90%;
+      padding-top: 17px;
+      border-top: 1px solid var(--line);
+      color: #334155;
+      font-size: clamp(23px, 3vw, 38px);
+      font-weight: 750;
+      line-height: 1.4;
+      animation: studyReveal .2s ease-out;
+    }
+
+    .study-instruction {
+      position: absolute;
+      z-index: 3;
+      right: 26px;
+      bottom: 18px;
+      left: 26px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1.45;
+      text-align: center;
+    }
+
+    .word-card.study-complete {
+      cursor: default;
+      border-color: rgba(34,197,94,.25);
+      background: rgba(240,253,244,.96);
+    }
+
+    @keyframes studyReveal {
+      from { opacity: 0; transform: translateY(7px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .memory-board {
+      min-width: 980px;
+    }
+
+    @media (max-width: 700px) {
+      .button-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .button-row .primary-btn,
+      .button-row .secondary-btn,
+      .button-row .smart-btn {
+        min-height: 58px;
+        font-size: 15px;
+      }
+
+      .word-card.study-mode {
+        gap: 14px;
+        padding: 58px 18px 58px;
+      }
+
+      .study-phase-badge {
+        top: 12px;
+        max-width: 44%;
+        padding: 5px 9px;
+        font-size: 10px;
+      }
+
+      .test-mode .study-phase-badge {
+        font-size: 13px;
+      }
+
+      .study-chinese {
+        max-width: 96%;
+        padding-top: 12px;
+        font-size: clamp(20px, 6.5vw, 31px);
+      }
+
+      .study-instruction {
+        right: 12px;
+        bottom: 9px;
+        left: 12px;
+        font-size: 9px;
+      }
+
+      .memory-board {
+        min-width: 900px;
+      }
+    }
+
   </style>
 </head>
 <body>
   <main class="app">
     <section class="panel input-panel" data-mobile-page="words">
       <h1 class="title">单词列表</h1>
-      <p class="hint">一行一个单词卡。中英词卡建议按“英文一行、中文一行”排列；随机时会自动整对打乱。</p>
-      <textarea id="wordInput" spellcheck="false" placeholder="例如：\nabandon\nmeticulous\na blessing in disguise"></textarea>
+      <p class="hint">支持两种输入：① 英文一行、中文一行；② 直接粘贴含“单词 / 中文 / 记忆程度 / 反应时间”的看板数据。智能学习会按当前顺序学习一遍，再进入 5 秒测试。</p>
+      <textarea id="wordInput" spellcheck="false" placeholder="例如：\nabandon\n放弃\nmeticulous\n一丝不苟的"></textarea>
       <div class="button-row">
         <button id="loadBtn" class="primary-btn" type="button">加载并随机抽选 →</button>
         <button id="orderBtn" class="secondary-btn" type="button" title="从第一行开始按顺序出卡">顺序出卡</button>
         <button id="pairShuffleBtn" class="secondary-btn" type="button" title="严格按每两行一组进行随机排列">中英成对打乱</button>
+        <button id="smartStudyBtn" class="smart-btn" type="button" title="读取普通中英词对或看板历史数据，按当前顺序学习一遍后进入 5 秒测试">智能学习</button>
       </div>
       <div id="loadStatus" class="status"></div>
     </section>
@@ -724,17 +1341,34 @@
         </div>
       </div>
 
+      <div id="memoryToolbar" class="memory-toolbar" aria-label="记忆记录工具">
+        <div class="memory-toolbar-info">
+          <span class="memory-state-dot" aria-hidden="true"></span>
+          <span id="memoryStateText">正在记录英文卡片反应</span>
+        </div>
+        <div class="memory-toolbar-actions">
+          <button id="memoryBoardBtn" class="memory-tool-btn" type="button">查看看板</button>
+          <button id="memoryPauseBtn" class="memory-tool-btn" type="button" aria-pressed="false">暂停记录</button>
+        </div>
+      </div>
+
       <div class="card-wrap">
         <article id="wordCard" class="word-card" aria-live="polite">
+          <span id="memoryScore" class="memory-score" hidden="">记忆 --</span>
+          <div id="memoryTimes" class="memory-times" hidden=""></div>
+          <span id="studyPhaseBadge" class="study-phase-badge" hidden=""></span>
           <span class="star-badge" aria-hidden="true">★</span>
+          <span id="passFeedback" class="pass-feedback" aria-hidden="true">通过</span>
           <div id="wordDisplay" class="empty-text">请先在左侧输入内容并点击加载</div>
+          <div id="studyChinese" class="study-chinese" hidden=""></div>
+          <div id="studyInstruction" class="study-instruction" hidden=""></div>
         </article>
       </div>
 
       <div class="timer-panel" aria-label="当前单词计时与自动星标">
         <div class="timer-copy">
           <span class="timer-label">当前词倒计时</span>
-          <span id="timerDisplay" class="timer-value">10</span>
+          <span id="timerDisplay" class="timer-value">5</span>
           <span class="timer-unit">秒</span>
         </div>
         <label class="auto-toggle" for="autoToggle" title="开启后，倒计时到 0 时自动给当前卡片添加星标">
@@ -749,16 +1383,17 @@
           <span class="desktop-label">− / ← 上一个</span><span class="mobile-label" aria-hidden="true">←</span>
         </button>
         <button id="starBtn" class="star-btn" type="button" aria-label="星标或取消星标">
-          <span class="desktop-label">Esc / ⌫ / W 星标</span><span class="mobile-label" aria-hidden="true">★</span>
+          <span class="desktop-label">Esc / ⌫ / Del / W 星标</span><span class="mobile-label" aria-hidden="true">★</span>
         </button>
         <button id="deleteBtn" class="delete-btn" type="button">C 删除</button>
+        <button id="bufferBtn" class="buffer-btn" type="button" aria-pressed="true">中文缓冲 On</button>
         <button id="nextBtn" class="nav-btn" type="button" aria-label="下一个">
           <span class="desktop-label">下一个 = / →</span><span class="mobile-label" aria-hidden="true">→</span>
         </button>
       </div>
 
       <div class="keyboard-hint">
-        <kbd>Esc</kbd><kbd>⌫</kbd><kbd>W</kbd> 星标 / 取消星标　
+        <kbd>Esc</kbd><kbd>⌫</kbd><kbd>Del</kbd><kbd>W</kbd> 星标 / 取消星标　
         <kbd>C</kbd> 删除当前卡片　
         <kbd>−</kbd><kbd>←</kbd><kbd>↑</kbd> 上一个　
         <kbd>=</kbd><kbd>→</kbd><kbd>↓</kbd> 下一个
@@ -795,398 +1430,1717 @@
     </button>
   </nav>
 
+
+  <div id="memoryModal" class="memory-modal" role="dialog" aria-modal="true" aria-labelledby="memoryModalTitle" aria-hidden="true">
+    <section class="memory-modal-dialog">
+      <header class="memory-modal-header">
+        <div class="memory-copy-actions">
+          <button id="memoryCopyBtn" class="memory-copy-btn" type="button">复制全部</button>
+          <button id="memoryCopyWrongBtn" class="memory-copy-btn secondary" type="button">复制错词</button>
+        </div>
+        <div class="memory-modal-title-wrap">
+          <h2 id="memoryModalTitle" class="memory-modal-title">单词记忆看板</h2>
+          <p id="memoryModalSummary" class="memory-modal-summary">尚无有效反应记录</p>
+        </div>
+        <button id="memoryCloseBtn" class="memory-close-btn" type="button" aria-label="关闭看板">×</button>
+      </header>
+      <div class="memory-board-wrap">
+        <table class="memory-board">
+          <thead>
+            <tr>
+              <th>英文卡片</th>
+              <th>中文</th>
+              <th>记忆程度</th>
+              <th>最近三次</th>
+              <th>有效次数</th>
+              <th>状态</th>
+            </tr>
+          </thead>
+          <tbody id="memoryBoardBody"></tbody>
+        </table>
+      </div>
+      <div id="memoryCopyStatus" class="memory-copy-status"></div>
+    </section>
+  </div>
+
   <script>
-    (() => {
-      const wordInput = document.getElementById('wordInput');
-      const loadBtn = document.getElementById('loadBtn');
-      const orderBtn = document.getElementById('orderBtn');
-      const pairShuffleBtn = document.getElementById('pairShuffleBtn');
-      const prevBtn = document.getElementById('prevBtn');
-      const nextBtn = document.getElementById('nextBtn');
-      const starBtn = document.getElementById('starBtn');
-      const deleteBtn = document.getElementById('deleteBtn');
-      const copyBtn = document.getElementById('copyBtn');
-      const addChineseBtn = document.getElementById('addChineseBtn');
-      const selectBtn = document.getElementById('selectBtn');
-      const clearStarsBtn = document.getElementById('clearStarsBtn');
-      const wordDisplay = document.getElementById('wordDisplay');
-      const wordCard = document.getElementById('wordCard');
-      const unknownList = document.getElementById('unknownList');
-      const totalCount = document.getElementById('totalCount');
-      const currentCount = document.getElementById('currentCount');
-      const starredCount = document.getElementById('starredCount');
-      const unstarredCount = document.getElementById('unstarredCount');
-      const loadStatus = document.getElementById('loadStatus');
-      const copyStatus = document.getElementById('copyStatus');
-      const timerDisplay = document.getElementById('timerDisplay');
-      const autoToggle = document.getElementById('autoToggle');
-      const mobilePages = [...document.querySelectorAll('[data-mobile-page]')];
-      const mobileTabs = [...document.querySelectorAll('[data-tab-target]')];
-      const mobileMedia = window.matchMedia('(max-width: 700px)');
+(() => {
+  const wordInput = document.getElementById('wordInput');
+  const loadBtn = document.getElementById('loadBtn');
+  const orderBtn = document.getElementById('orderBtn');
+  const pairShuffleBtn = document.getElementById('pairShuffleBtn');
+  const smartStudyBtn = document.getElementById('smartStudyBtn');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  const starBtn = document.getElementById('starBtn');
+  const deleteBtn = document.getElementById('deleteBtn');
+  const bufferBtn = document.getElementById('bufferBtn');
+  const copyBtn = document.getElementById('copyBtn');
+  const addChineseBtn = document.getElementById('addChineseBtn');
+  const selectBtn = document.getElementById('selectBtn');
+  const clearStarsBtn = document.getElementById('clearStarsBtn');
+  const wordDisplay = document.getElementById('wordDisplay');
+  const wordCard = document.getElementById('wordCard');
+  const passFeedback = document.getElementById('passFeedback');
+  const studyChinese = document.getElementById('studyChinese');
+  const studyPhaseBadge = document.getElementById('studyPhaseBadge');
+  const studyInstruction = document.getElementById('studyInstruction');
+  const unknownList = document.getElementById('unknownList');
+  const totalCount = document.getElementById('totalCount');
+  const currentCount = document.getElementById('currentCount');
+  const starredCount = document.getElementById('starredCount');
+  const unstarredCount = document.getElementById('unstarredCount');
+  const loadStatus = document.getElementById('loadStatus');
+  const copyStatus = document.getElementById('copyStatus');
+  const timerDisplay = document.getElementById('timerDisplay');
+  const autoToggle = document.getElementById('autoToggle');
+  const mobilePages = [...document.querySelectorAll('[data-mobile-page]')];
+  const mobileTabs = [...document.querySelectorAll('[data-tab-target]')];
+  const mobileMedia = window.matchMedia('(max-width: 700px)');
 
-      let sourceCards = [];
-      let deck = [];
-      let currentIndex = -1;
-      let mode = 'random';
-      let timerValue = 10;
-      let timerInterval = null;
-      let autoHandledCardId = null;
-      const starredIds = new Set();
+  const memoryScore = document.getElementById('memoryScore');
+  const memoryTimes = document.getElementById('memoryTimes');
+  const memoryToolbar = document.getElementById('memoryToolbar');
+  const memoryStateText = document.getElementById('memoryStateText');
+  const memoryBoardBtn = document.getElementById('memoryBoardBtn');
+  const memoryPauseBtn = document.getElementById('memoryPauseBtn');
+  const memoryModal = document.getElementById('memoryModal');
+  const memoryCloseBtn = document.getElementById('memoryCloseBtn');
+  const memoryCopyBtn = document.getElementById('memoryCopyBtn');
+  const memoryCopyWrongBtn = document.getElementById('memoryCopyWrongBtn');
+  const memoryModalSummary = document.getElementById('memoryModalSummary');
+  const memoryBoardBody = document.getElementById('memoryBoardBody');
+  const memoryCopyStatus = document.getElementById('memoryCopyStatus');
 
-      try {
-        autoToggle.checked = localStorage.getItem('wordcard-auto-star') === 'true';
-      } catch (_) {}
+  const OLD_MEMORY_STORAGE_KEY = 'wordcard-adaptive-memory-v1';
+  const MEMORY_TRACKING_KEY = 'wordcard-memory-tracking-enabled';
+  const MAX_VALID_SECONDS = 40;
+  const MAX_RECORDS_PER_CARD = 200;
+  const SMART_PASS_SECONDS = 5;
 
-      function createId(index) {
-        return `${Date.now()}-${index}-${Math.random().toString(36).slice(2)}`;
-      }
+  let sourceCards = [];
+  let deck = [];
+  let currentIndex = -1;
+  let mode = 'random';
+  let timerValue = 5;
+  let timerInterval = null;
+  let autoHandledCardId = null;
+  let trackingEnabled = true;
+  let activeVisit = null;
+  let timingSuspendedAt = null;
+  const timingSuspensionReasons = new Set();
+  const starredIds = new Set();
+  let memoryStore = createEmptyMemoryStore();
+  let lastLoadedInputSignature = '';
+  let suppressNextCardClick = false;
+  let navigationSerial = 0;
+  let smartMovePending = false;
+  let smartChineseBufferEnabled = true;
+  let passFeedbackTimer = null;
+  const lastCorrectPassByKey = new Map();
 
-      function parseLines(text) {
-        return text
-          .split(/\r?\n/)
-          .map(line => line.trim())
-          .filter(Boolean)
-          .map((text, index) => ({ id: createId(index), text }));
-      }
+  let smartState = createSmartState();
 
-      function shuffle(array) {
-        const result = [...array];
-        for (let i = result.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [result[i], result[j]] = [result[j], result[i]];
-        }
-        return result;
-      }
+  try {
+    autoToggle.checked = localStorage.getItem('wordcard-auto-star') === 'true';
+    trackingEnabled = localStorage.getItem(MEMORY_TRACKING_KEY) !== 'false';
+    // 旧版本曾把记忆数据写入浏览器缓存。新版只保留当前载入批次，启动时主动清掉旧缓存。
+    localStorage.removeItem(OLD_MEMORY_STORAGE_KEY);
+  } catch (_) {}
 
-      function containsChinese(text) {
-        return /[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/.test(text);
-      }
+  function createEmptyMemoryStore() {
+    return { cards: {}, importedAverage: null };
+  }
 
-      function hasEnglishChinesePairs(cards) {
-        if (cards.length < 2) return false;
-        let completePairs = 0;
-        let matchingPairs = 0;
+  function createSmartState() {
+    return {
+      active: false,
+      phase: null,
+      round: 0,
+      allPairs: [],
+      workingPairs: [],
+      testAttempts: new Map(),
+      learnPlans: new Map(),
+      learnAttempts: new Map(),
+      phaseBaseline: null,
+      phaseThreshold: null,
+      previewMaxIndex: -1,
+      revealed: false,
+      completionMessage: ''
+    };
+  }
 
-        for (let i = 0; i + 1 < cards.length; i += 2) {
-          completePairs += 1;
-          const englishCard = cards[i];
-          const chineseCard = cards[i + 1];
-          if (!containsChinese(englishCard.text) && containsChinese(chineseCard.text)) {
-            matchingPairs += 1;
-          }
-        }
+  function createId(index) {
+    return `${Date.now()}-${index}-${Math.random().toString(36).slice(2)}`;
+  }
 
-        return completePairs > 0 && matchingPairs === completePairs;
-      }
+  function normalizeMemoryText(text) {
+    return String(text || '').trim().replace(/\s+/g, ' ').toLowerCase();
+  }
 
-      function shuffleInPairs(cards) {
-        const chunks = [];
-        for (let i = 0; i < cards.length; i += 2) {
-          chunks.push(cards.slice(i, i + 2));
-        }
-        return shuffle(chunks).flat();
-      }
+  function inputSignature(text) {
+    return String(text || '').replace(/\r\n/g, '\n').trim();
+  }
 
-      function smartShuffle(cards) {
-        return hasEnglishChinesePairs(cards) ? shuffleInPairs(cards) : shuffle(cards);
-      }
+  function containsChinese(text) {
+    return /[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/.test(String(text || ''));
+  }
 
-      function currentCard() {
-        return currentIndex >= 0 ? deck[currentIndex] : null;
-      }
+  function containsEnglish(text) {
+    return /[A-Za-z]/.test(String(text || ''));
+  }
 
-      function updateTimerDisplay() {
-        timerDisplay.textContent = timerValue;
-        timerDisplay.classList.toggle('overtime', timerValue < 0);
-      }
-
-      function stopTimer() {
-        if (timerInterval !== null) {
-          clearInterval(timerInterval);
-          timerInterval = null;
-        }
-      }
-
-      function applyAutoStarIfNeeded() {
-        const card = currentCard();
-        if (!card || !autoToggle.checked || timerValue > 0 || autoHandledCardId === card.id) return;
-        starredIds.add(card.id);
-        autoHandledCardId = card.id;
-        render();
-      }
-
-      function resetTimer() {
-        stopTimer();
-        timerValue = 10;
-        autoHandledCardId = null;
-        updateTimerDisplay();
-        if (!currentCard()) return;
-        timerInterval = setInterval(() => {
-          timerValue -= 1;
-          updateTimerDisplay();
-          applyAutoStarIfNeeded();
-        }, 1000);
-      }
-
-      function switchMobileTab(pageName) {
-        mobilePages.forEach(page => {
-          page.classList.toggle('mobile-active', page.dataset.mobilePage === pageName);
-        });
-        mobileTabs.forEach(tab => {
-          const isActive = tab.dataset.tabTarget === pageName;
-          tab.classList.toggle('active', isActive);
-          tab.setAttribute('aria-current', isActive ? 'page' : 'false');
-        });
-      }
-
-      function showHomeOnMobile() {
-        if (mobileMedia.matches) switchMobileTab('home');
-      }
-
-      function render() {
-        const card = currentCard();
-        const starredCards = sourceCards.filter(item => starredIds.has(item.id));
-
-        totalCount.textContent = deck.length;
-        currentCount.textContent = deck.length ? `${currentIndex + 1} / ${deck.length}` : '0 / 0';
-        starredCount.textContent = starredCards.length;
-        unstarredCount.textContent = Math.max(0, deck.length - starredCards.length);
-        unknownList.value = starredCards.map(item => item.text).join('\n');
-
-        if (!card) {
-          wordDisplay.textContent = '请先在左侧输入内容并点击加载';
-          wordDisplay.classList.add('empty-text');
-          wordCard.classList.remove('starred');
-          return;
-        }
-
-        wordDisplay.textContent = card.text;
-        wordDisplay.classList.remove('empty-text');
-        wordCard.classList.toggle('starred', starredIds.has(card.id));
-      }
-
-      function readInputAsSource(preserveWhenSame = false) {
-        const parsed = parseLines(wordInput.value);
-        const isSameList = parsed.length === sourceCards.length &&
-          parsed.every((item, index) => item.text === sourceCards[index].text);
-
-        if (preserveWhenSame && isSameList) {
-          return;
-        }
-
-        sourceCards = parsed;
-        starredIds.clear();
-        copyStatus.textContent = '';
-      }
-
-      function loadWords() {
-        readInputAsSource();
-        mode = 'random';
-        deck = smartShuffle(sourceCards);
-        currentIndex = deck.length ? 0 : -1;
-        const paired = hasEnglishChinesePairs(sourceCards);
-        loadStatus.textContent = deck.length
-          ? `已加载 ${deck.length} 张卡片，${paired ? '检测到中英配对，已按两行一组随机排列。' : '已完成单卡随机排列。'}`
-          : '没有检测到有效内容，请至少输入一行非空文字。';
-        render();
-        resetTimer();
-        showHomeOnMobile();
-      }
-
-      function startInOrder() {
-        readInputAsSource(true);
-        mode = 'sequential';
-        deck = [...sourceCards];
-        currentIndex = deck.length ? 0 : -1;
-        loadStatus.textContent = deck.length
-          ? `已从头开始，按左侧列表顺序出卡，共 ${deck.length} 张。`
-          : '没有检测到有效内容，请至少输入一行非空文字。';
-        render();
-        resetTimer();
-        showHomeOnMobile();
-      }
-
-      function reshuffleInPairs() {
-        readInputAsSource(true);
-        if (!sourceCards.length) {
-          loadStatus.textContent = '请先输入并加载单词列表。';
-          render();
-          return;
-        }
-
-        mode = 'paired-random';
-        deck = shuffleInPairs(sourceCards);
-        currentIndex = 0;
-        const pairCount = Math.floor(sourceCards.length / 2);
-        const hasSingleTail = sourceCards.length % 2 === 1;
-        loadStatus.textContent = `已按每两行一组随机排列，共 ${pairCount} 组${hasSingleTail ? '，最后一行作为单独卡片保留' : ''}。`;
-        render();
-        resetTimer();
-        showHomeOnMobile();
-      }
-
-      function addMatchedChinese() {
-        if (!sourceCards.length) {
-          readInputAsSource();
-        }
-        if (!sourceCards.length) {
-          copyStatus.textContent = '左侧没有可匹配的内容。';
-          render();
-          return;
-        }
-
-        let added = 0;
-        let matched = 0;
-        for (let i = 0; i + 1 < sourceCards.length; i += 2) {
-          const englishCard = sourceCards[i];
-          const chineseCard = sourceCards[i + 1];
-          if (!starredIds.has(englishCard.id) || !containsChinese(chineseCard.text)) continue;
-          matched += 1;
-          if (!starredIds.has(chineseCard.id)) {
-            starredIds.add(chineseCard.id);
-            added += 1;
-          }
-        }
-
-        if (added > 0) {
-          copyStatus.textContent = `已为 ${added} 个星标英文补上对应中文。`;
-        } else if (matched > 0) {
-          copyStatus.textContent = '对应中文已经全部在星标列表中。';
-        } else {
-          copyStatus.textContent = '没有找到“已星标英文 + 下一行中文”的配对。请确认左侧按英文一行、中文一行排列。';
-        }
-        render();
-      }
-
-      function move(delta) {
-        if (!deck.length) return;
-        currentIndex = (currentIndex + delta + deck.length) % deck.length;
-        render();
-        resetTimer();
-      }
-
-      function toggleStar() {
-        const card = currentCard();
-        if (!card) return;
-        if (starredIds.has(card.id)) {
-          starredIds.delete(card.id);
-        } else {
-          starredIds.add(card.id);
-        }
-        render();
-      }
-
-      function deleteCurrentCard() {
-        const card = currentCard();
-        if (!card) {
-          loadStatus.textContent = '当前没有可以删除的卡片。';
-          return;
-        }
-
-        const deletedText = card.text;
-        starredIds.delete(card.id);
-        sourceCards = sourceCards.filter(item => item.id !== card.id);
-        deck.splice(currentIndex, 1);
-        wordInput.value = sourceCards.map(item => item.text).join('\n');
-
-        if (!deck.length) {
-          currentIndex = -1;
-        } else if (currentIndex >= deck.length) {
-          currentIndex = deck.length - 1;
-        }
-
-        loadStatus.textContent = `已删除“${deletedText}”，左侧列表已同步更新。当前为${mode === 'sequential' ? '顺序' : '随机'}出卡。`;
-        render();
-        resetTimer();
-      }
-
-      async function copyUnknowns() {
-        const text = unknownList.value;
-        if (!text) {
-          copyStatus.textContent = '当前没有星标内容。';
-          return;
-        }
-        try {
-          await navigator.clipboard.writeText(text);
-          copyStatus.textContent = `已复制 ${starredIds.size} 行内容。`;
-        } catch (_) {
-          unknownList.focus();
-          unknownList.select();
-          const success = document.execCommand('copy');
-          copyStatus.textContent = success ? `已复制 ${starredIds.size} 行内容。` : '复制失败，请手动全选复制。';
-        }
-      }
-
-      function isTypingTarget(target) {
-        return target instanceof HTMLTextAreaElement || target instanceof HTMLInputElement || target.isContentEditable;
-      }
-
-      mobileTabs.forEach(tab => {
-        tab.addEventListener('click', () => switchMobileTab(tab.dataset.tabTarget));
+  function makeCardsFromLines(lines) {
+    const occurrenceMap = new Map();
+    const cards = lines
+      .map(line => String(line || '').trim())
+      .filter(Boolean)
+      .map((text, index) => {
+        const normalized = normalizeMemoryText(text);
+        const occurrence = occurrenceMap.get(normalized) || 0;
+        occurrenceMap.set(normalized, occurrence + 1);
+        return {
+          id: createId(index),
+          text,
+          memoryKey: `${normalized}::${occurrence}`,
+          chineseText: ''
+        };
       });
+    attachPairInformation(cards);
+    return cards;
+  }
 
-      autoToggle.addEventListener('change', () => {
-        try {
-          localStorage.setItem('wordcard-auto-star', String(autoToggle.checked));
-        } catch (_) {}
-        applyAutoStarIfNeeded();
+  function attachPairInformation(cards) {
+    cards.forEach(card => {
+      card.chineseText = card.chineseText || '';
+      card.pairedEnglishId = null;
+    });
+    for (let i = 0; i < cards.length; i += 1) {
+      const english = cards[i];
+      const chinese = cards[i + 1];
+      if (!containsEnglish(english.text) || !chinese || !containsChinese(chinese.text)) continue;
+      english.chineseText = chinese.text;
+      english.pairedChineseId = chinese.id;
+      chinese.pairedEnglishId = english.id;
+      i += 1;
+    }
+  }
+
+  function parsePlainPairsForLookup(text) {
+    const lines = String(text || '')
+      .split(/\r?\n/)
+      .map(line => line.trim())
+      .filter(Boolean);
+    const lookup = new Map();
+    for (let i = 0; i + 1 < lines.length; i += 1) {
+      if (containsEnglish(lines[i]) && containsChinese(lines[i + 1])) {
+        const key = normalizeMemoryText(lines[i]);
+        if (!lookup.has(key)) lookup.set(key, []);
+        lookup.get(key).push(lines[i + 1]);
+        i += 1;
+      }
+    }
+    return lookup;
+  }
+
+  function buildChineseLookupFromCards(cards) {
+    const lookup = new Map();
+    (cards || []).forEach(card => {
+      if (!containsEnglish(card.text)) return;
+      const chinese = card.chineseText || '';
+      if (!chinese) return;
+      const key = normalizeMemoryText(card.text);
+      if (!lookup.has(key)) lookup.set(key, []);
+      lookup.get(key).push(chinese);
+    });
+    return lookup;
+  }
+
+  function takeChineseFromLookup(lookup, cursorMap, normalized) {
+    const options = lookup.get(normalized) || [];
+    const cursor = cursorMap.get(normalized) || 0;
+    if (cursor >= options.length) return '';
+    cursorMap.set(normalized, cursor + 1);
+    return options[cursor] || '';
+  }
+
+  function parseDurationList(raw, withDates = false) {
+    if (!raw || raw === '暂无' || raw === '--') return [];
+    const separator = withDates ? /\s*\|\s*/ : /\s*\/\s*/;
+    return String(raw).split(separator).map(part => {
+      const durationMatch = part.match(/([0-9]+(?:\.[0-9]+)?)\s*s/i);
+      if (!durationMatch) return null;
+      const duration = Number(durationMatch[1]);
+      if (!Number.isFinite(duration) || duration <= 0 || duration > MAX_VALID_SECONDS) return null;
+      const incorrect = /错误|\(错误\)|^×/.test(part);
+      let endedAt = Date.now();
+      if (withDates && part.includes('@')) {
+        const timestampText = part.slice(part.indexOf('@') + 1).trim();
+        const parsed = Date.parse(timestampText);
+        if (Number.isFinite(parsed)) endedAt = parsed;
+      }
+      return {
+        duration: Math.round(duration * 10) / 10,
+        endedAt,
+        incorrect,
+        reason: incorrect ? 'imported-incorrect' : 'imported'
+      };
+    }).filter(Boolean);
+  }
+
+  function parseDashboardBundle(text, headerIndex, lines, fallbackChineseLookup = new Map()) {
+    const header = lines[headerIndex].split('\t').map(item => item.trim());
+    const indexOf = (...names) => header.findIndex(value => names.includes(value));
+    const wordIndex = indexOf('单词', '英文卡片');
+    const chineseIndex = indexOf('中文', '中文释义');
+    const scoreIndex = indexOf('记忆程度');
+    const recentIndex = indexOf('最近三次');
+    const allIndex = indexOf('所有有效反应时间');
+    const statusIndex = indexOf('状态');
+
+    const prefixText = lines.slice(0, headerIndex).join('\n');
+    const chineseLookup = parsePlainPairsForLookup(prefixText);
+    const lookupCursor = new Map();
+    const fallbackLookupCursor = new Map();
+    const pairs = [];
+    const importedRows = [];
+
+    for (let i = headerIndex + 1; i < lines.length; i += 1) {
+      if (!lines[i].trim() || !lines[i].includes('\t')) continue;
+      const columns = lines[i].split('\t');
+      const word = (columns[wordIndex] || '').trim();
+      if (!word || !containsEnglish(word)) continue;
+
+      let chinese = chineseIndex >= 0 ? (columns[chineseIndex] || '').trim() : '';
+      if (!chinese) {
+        const normalized = normalizeMemoryText(word);
+        chinese = takeChineseFromLookup(chineseLookup, lookupCursor, normalized)
+          || takeChineseFromLookup(fallbackChineseLookup, fallbackLookupCursor, normalized);
+      }
+
+      const scoreText = scoreIndex >= 0 ? (columns[scoreIndex] || '').trim() : '';
+      const scoreMatch = scoreText.match(/([0-9]+)%/);
+      const importedScore = scoreMatch ? Math.max(0, Math.min(100, Number(scoreMatch[1]))) : null;
+      const recentText = recentIndex >= 0 ? (columns[recentIndex] || '').trim() : '';
+      const allText = allIndex >= 0 ? (columns[allIndex] || '').trim() : '';
+      const status = statusIndex >= 0 ? (columns[statusIndex] || '').trim() : '';
+      let records = parseDurationList(allText, true);
+      if (!records.length) records = parseDurationList(recentText, false).reverse();
+
+      pairs.push({ english: word, chinese });
+      importedRows.push({ word, records, importedScore, status });
+    }
+
+    const flatLines = [];
+    pairs.forEach(pair => {
+      flatLines.push(pair.english);
+      if (pair.chinese) flatLines.push(pair.chinese);
+    });
+    const cards = makeCardsFromLines(flatLines);
+    const store = createEmptyMemoryStore();
+
+    const averageLine = lines.find(line => line.startsWith('个人有效平均反应时间'));
+    if (averageLine) {
+      const match = averageLine.match(/([0-9]+(?:\.[0-9]+)?)\s*s/i);
+      if (match) store.importedAverage = Number(match[1]);
+    }
+
+    const importedStarredKeys = new Set();
+    const occurrenceCursor = new Map();
+    importedRows.forEach(row => {
+      const normalized = normalizeMemoryText(row.word);
+      const occurrence = occurrenceCursor.get(normalized) || 0;
+      occurrenceCursor.set(normalized, occurrence + 1);
+      const memoryKey = `${normalized}::${occurrence}`;
+      store.cards[memoryKey] = {
+        text: row.word,
+        records: row.records,
+        importedScore: row.importedScore,
+        updatedAt: Date.now()
+      };
+      if (/已星标|不认识/.test(row.status)) importedStarredKeys.add(memoryKey);
+    });
+
+    return {
+      cards,
+      memoryStore: store,
+      importedStarredKeys,
+      importedCount: importedRows.length,
+      dashboardDetected: true
+    };
+  }
+
+  function parseInputBundle(text, fallbackChineseLookup = new Map()) {
+    const lines = String(text || '').split(/\r?\n/);
+    const headerIndex = lines.findIndex(line => {
+      if (!line.includes('\t')) return false;
+      const columns = line.split('\t').map(item => item.trim());
+      return columns.includes('单词') && columns.includes('记忆程度');
+    });
+
+    if (headerIndex >= 0) return parseDashboardBundle(text, headerIndex, lines, fallbackChineseLookup);
+
+    return {
+      cards: makeCardsFromLines(lines),
+      memoryStore: createEmptyMemoryStore(),
+      importedStarredKeys: new Set(),
+      importedCount: 0,
+      dashboardDetected: false
+    };
+  }
+
+  function shuffle(array) {
+    const result = [...array];
+    for (let i = result.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [result[i], result[j]] = [result[j], result[i]];
+    }
+    return result;
+  }
+
+  function hasEnglishChinesePairs(cards) {
+    if (cards.length < 2) return false;
+    let completePairs = 0;
+    let matchingPairs = 0;
+    for (let i = 0; i + 1 < cards.length; i += 2) {
+      completePairs += 1;
+      if (containsEnglish(cards[i].text) && containsChinese(cards[i + 1].text)) matchingPairs += 1;
+    }
+    return completePairs > 0 && matchingPairs === completePairs;
+  }
+
+  function shuffleInPairs(cards) {
+    const chunks = [];
+    for (let i = 0; i < cards.length; i += 2) chunks.push(cards.slice(i, i + 2));
+    return shuffle(chunks).flat();
+  }
+
+  function smartShuffle(cards) {
+    return hasEnglishChinesePairs(cards) ? shuffleInPairs(cards) : shuffle(cards);
+  }
+
+  function currentCard() {
+    return currentIndex >= 0 ? deck[currentIndex] : null;
+  }
+
+  function findSourceCardById(id) {
+    return sourceCards.find(card => card.id === id) || null;
+  }
+
+  function getChineseForCard(card) {
+    if (!card) return '';
+    if (card.studyChinese) return card.studyChinese;
+    if (card.chineseText) return card.chineseText;
+    const source = findSourceCardById(card.id);
+    return source ? source.chineseText || '' : '';
+  }
+
+  function getMemoryEntry(card, create = false) {
+    if (!card || card.virtual || !containsEnglish(card.text)) return null;
+    let entry = memoryStore.cards[card.memoryKey];
+    if (!entry && create) {
+      entry = { text: card.text, records: [], importedScore: null, updatedAt: Date.now() };
+      memoryStore.cards[card.memoryKey] = entry;
+    }
+    if (entry) {
+      entry.text = card.text;
+      if (!Array.isArray(entry.records)) entry.records = [];
+    }
+    return entry || null;
+  }
+
+  // 新版记忆数据仅保存在当前载入批次，不再写入 localStorage。
+  function saveMemoryStore() {}
+
+  function validRecords(entry) {
+    if (!entry || !Array.isArray(entry.records)) return [];
+    return entry.records.filter(record =>
+      Number.isFinite(record.duration) && record.duration > 0 && record.duration <= MAX_VALID_SECONDS
+    );
+  }
+
+  function getAllCorrectDurations() {
+    const values = [];
+    Object.values(memoryStore.cards).forEach(entry => {
+      validRecords(entry).forEach(record => {
+        if (!record.incorrect) values.push(record.duration);
       });
+    });
+    return values;
+  }
 
-      loadBtn.addEventListener('click', loadWords);
-      orderBtn.addEventListener('click', startInOrder);
-      pairShuffleBtn.addEventListener('click', reshuffleInPairs);
-      prevBtn.addEventListener('click', () => move(-1));
-      nextBtn.addEventListener('click', () => move(1));
-      starBtn.addEventListener('click', toggleStar);
-      deleteBtn.addEventListener('click', deleteCurrentCard);
-      copyBtn.addEventListener('click', copyUnknowns);
-      addChineseBtn.addEventListener('click', addMatchedChinese);
+  function median(values) {
+    if (!values.length) return null;
+    const sorted = [...values].sort((a, b) => a - b);
+    const middle = Math.floor(sorted.length / 2);
+    return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
+  }
 
-      selectBtn.addEventListener('click', () => {
-        unknownList.focus();
-        unknownList.select();
-        copyStatus.textContent = unknownList.value ? '已全选，可以按 Ctrl/Cmd + C 复制。' : '当前没有星标内容。';
+  function getAdaptiveAverage() {
+    const entries = Object.values(memoryStore.cards);
+    const hasNewSessionRecords = entries.some(entry =>
+      validRecords(entry).some(record => !String(record.reason || '').startsWith('imported'))
+    );
+    // 刚导入看板时优先尊重看板里已经计算好的个人平均值；产生新记录后再动态重算。
+    if (!hasNewSessionRecords && Number.isFinite(memoryStore.importedAverage)) {
+      return memoryStore.importedAverage;
+    }
+    const values = getAllCorrectDurations().sort((a, b) => a - b);
+    if (!values.length) return Number.isFinite(memoryStore.importedAverage) ? memoryStore.importedAverage : null;
+    let sample = values;
+    if (values.length >= 10) {
+      const trim = Math.max(1, Math.floor(values.length * 0.1));
+      sample = values.slice(trim, values.length - trim);
+    }
+    return sample.reduce((sum, value) => sum + value, 0) / sample.length;
+  }
+
+  function getAdaptiveThreshold(baseline = getAdaptiveAverage()) {
+    if (!baseline || baseline <= 0) return null;
+    const values = getAllCorrectDurations();
+    if (values.length < 3) return baseline * 1.45;
+    const center = median(values);
+    const deviations = values.map(value => Math.abs(value - center));
+    const mad = median(deviations) || baseline * 0.12;
+    // 阈值完全跟随个人平均值和个人波动，不使用固定“几秒算慢”。
+    return Math.max(baseline * 1.35, baseline + mad * 1.8);
+  }
+
+  function clamp(value, min, max) {
+    return Math.min(max, Math.max(min, value));
+  }
+
+  function scoreRecord(record, average) {
+    if (record.incorrect) return 0;
+    if (!average || average <= 0) return 68;
+    const relative = average / record.duration;
+    return clamp(Math.round(68 + 32 * Math.log2(relative)), 5, 100);
+  }
+
+  function isCardStarredByMemoryKey(memoryKey) {
+    return sourceCards.some(card => card.memoryKey === memoryKey && starredIds.has(card.id));
+  }
+
+  function calculateMemoryPercent(card) {
+    if (!card || card.virtual || !containsEnglish(card.text)) return null;
+    if (starredIds.has(card.id)) return 0;
+    const entry = getMemoryEntry(card, false);
+    const recent = validRecords(entry).slice(-3).reverse();
+    if (!recent.length) {
+      return entry && Number.isFinite(entry.importedScore) ? entry.importedScore : null;
+    }
+    const average = getAdaptiveAverage();
+    const weights = [0.5, 0.3, 0.2];
+    let totalWeight = 0;
+    let weightedScore = 0;
+    recent.forEach((record, index) => {
+      const weight = weights[index];
+      totalWeight += weight;
+      weightedScore += scoreRecord(record, average) * weight;
+    });
+    return clamp(Math.round(weightedScore / totalWeight), 0, 100);
+  }
+
+  function formatSeconds(duration) {
+    if (!Number.isFinite(duration)) return '--';
+    return `${duration < 10 ? duration.toFixed(1) : duration.toFixed(0)}s`;
+  }
+
+  function renderMemoryForCard(card) {
+    const eligible = Boolean(card && !card.virtual && containsEnglish(card.text));
+    wordCard.classList.toggle('memory-enabled', eligible);
+    memoryScore.hidden = !eligible;
+    memoryTimes.hidden = !eligible;
+    if (!eligible) return;
+
+    const entry = getMemoryEntry(card, false);
+    const recent = validRecords(entry).slice(-3).reverse();
+    const percent = calculateMemoryPercent(card);
+    memoryScore.textContent = percent === null ? '记忆 --' : `记忆 ${percent}%`;
+    memoryScore.classList.remove('low', 'medium', 'high');
+    if (percent !== null) memoryScore.classList.add(percent < 45 ? 'low' : percent < 75 ? 'medium' : 'high');
+
+    const chips = recent.length
+      ? recent.map(record => `<span class="memory-time-chip${record.incorrect ? ' incorrect' : ''}" title="${record.incorrect ? '已判为不认识' : '有效反应时间'}">${record.incorrect ? '× ' : ''}${formatSeconds(record.duration)}</span>`).join('')
+      : '<span class="memory-time-chip">暂无</span>';
+    memoryTimes.innerHTML = `<span class="memory-times-title">最近三次反应</span><span class="memory-times-values">${chips}</span>`;
+  }
+
+  function updateMemoryToolbar() {
+    memoryToolbar.classList.toggle('paused', !trackingEnabled);
+    memoryPauseBtn.classList.toggle('is-paused', !trackingEnabled);
+    memoryPauseBtn.textContent = trackingEnabled ? '暂停记录' : '继续记录';
+    memoryPauseBtn.setAttribute('aria-pressed', String(!trackingEnabled));
+    if (smartState.active && !trackingEnabled) {
+      memoryStateText.textContent = '记录已暂停；智能测试仅按星标判断';
+    } else if (smartState.active) {
+      memoryStateText.textContent = smartState.phase === 'test'
+        ? '智能测试中：按 5 秒反应线和星标判断'
+        : smartState.phase === 'complete'
+          ? '智能学习完成，本批数据仍可查看'
+          : '智能学习中：只用于本轮调度，不写入看板';
+    } else {
+      memoryStateText.textContent = trackingEnabled ? '正在记录英文卡片反应' : '记录已暂停，当前数据保留';
+    }
+  }
+
+  function updateBufferButton() {
+    const visible = smartState.active && smartState.phase !== 'complete';
+    bufferBtn.classList.toggle('visible', visible);
+    bufferBtn.classList.toggle('off', !smartChineseBufferEnabled);
+    bufferBtn.textContent = `中文缓冲 ${smartChineseBufferEnabled ? 'On' : 'Off'}`;
+    bufferBtn.setAttribute('aria-pressed', String(smartChineseBufferEnabled));
+  }
+
+  function currentVisitContext() {
+    return smartState.active
+      ? `smart:${smartState.phase}:round-${smartState.round}`
+      : `mode:${mode}`;
+  }
+
+  function startVisit() {
+    const card = currentCard();
+    activeVisit = null;
+    if (!card || card.virtual || !containsEnglish(card.text)) return;
+    activeVisit = {
+      cardId: card.id,
+      memoryKey: card.memoryKey,
+      startedAtPerformance: performance.now(),
+      startedAtEpoch: Date.now(),
+      markedUnknown: false,
+      unknownReason: '',
+      decisionDuration: null,
+      revealed: false,
+      smartPhase: smartState.active ? smartState.phase : null,
+      context: currentVisitContext()
+    };
+  }
+
+  function discardVisit() {
+    activeVisit = null;
+  }
+
+  function currentVisitElapsed() {
+    if (!activeVisit) return null;
+    return (performance.now() - activeVisit.startedAtPerformance) / 1000;
+  }
+
+  function finishVisit(reason = 'navigation') {
+    const card = currentCard();
+    if (!activeVisit || !card || activeVisit.cardId !== card.id) {
+      discardVisit();
+      return null;
+    }
+
+    const elapsed = currentVisitElapsed();
+    const rawDuration = activeVisit.decisionDuration ?? elapsed;
+    const visitContext = activeVisit.context;
+    const outcome = {
+      card,
+      duration: Number.isFinite(rawDuration) ? Math.max(0.1, Math.round(rawDuration * 10) / 10) : null,
+      incorrect: Boolean(activeVisit.markedUnknown),
+      reason: activeVisit.markedUnknown ? activeVisit.unknownReason || 'unknown' : reason,
+      revealed: Boolean(activeVisit.revealed),
+      smartPhase: activeVisit.smartPhase,
+      tracked: trackingEnabled,
+      valid: Number.isFinite(rawDuration) && rawDuration > 0 && rawDuration <= MAX_VALID_SECONDS,
+      stored: false,
+      context: visitContext
+    };
+    discardVisit();
+
+    // 超过 40 秒视为背诵、离开或中断，不写入最近三次；智能学习的 learn 阶段只供本轮调度，不写入看板。
+    if (!trackingEnabled || !outcome.valid || outcome.smartPhase === 'learn') return outcome;
+
+    const entry = getMemoryEntry(card, true);
+    const record = {
+      duration: outcome.duration,
+      endedAt: Date.now(),
+      incorrect: outcome.incorrect,
+      reason: outcome.reason
+    };
+    entry.records.push(record);
+    if (entry.records.length > MAX_RECORDS_PER_CARD) {
+      entry.records.splice(0, entry.records.length - MAX_RECORDS_PER_CARD);
+    }
+    entry.updatedAt = Date.now();
+    outcome.record = record;
+    outcome.stored = true;
+    if (!record.incorrect && ['next', 'previous', 'smart-next', 'smart-previous'].includes(reason)) {
+      lastCorrectPassByKey.set(card.memoryKey, {
+        record,
+        navigationSerial,
+        endedAt: record.endedAt,
+        context: visitContext
       });
+    }
+    saveMemoryStore();
+    return outcome;
+  }
 
-      clearStarsBtn.addEventListener('click', () => {
-        starredIds.clear();
-        copyStatus.textContent = '已清空全部星标。';
-        render();
-      });
+  function markLatestPreviousPassIncorrect(card, reason) {
+    if (!card || card.virtual || !containsEnglish(card.text) || !activeVisit || activeVisit.cardId !== card.id) return;
+    const previousPass = lastCorrectPassByKey.get(card.memoryKey);
+    if (!previousPass) return;
+    const returnedImmediately = navigationSerial - previousPass.navigationSerial <= 2;
+    const sameLearningContext = previousPass.context === activeVisit.context;
+    const reallyReturned = previousPass.endedAt < activeVisit.startedAtEpoch;
+    if (!returnedImmediately || !sameLearningContext || !reallyReturned) return;
+    previousPass.record.incorrect = true;
+    previousPass.record.reason = reason || 'starred-after-immediate-return';
+    lastCorrectPassByKey.delete(card.memoryKey);
+  }
 
-      document.addEventListener('keydown', (event) => {
-        if (isTypingTarget(event.target)) return;
-        if (event.ctrlKey || event.metaKey || event.altKey) return;
+  function markCurrentVisitUnknown(card, reason) {
+    if (!card || card.virtual || !containsEnglish(card.text)) return;
+    markLatestPreviousPassIncorrect(card, reason);
+    if (activeVisit && activeVisit.cardId === card.id) {
+      activeVisit.markedUnknown = true;
+      activeVisit.unknownReason = reason;
+    }
+  }
 
-        const key = event.key.toLowerCase();
-        if (key === 'w' || event.key === 'Escape' || event.key === 'Backspace') {
-          event.preventDefault();
-          toggleStar();
-          return;
-        }
+  function updateTimerDisplay() {
+    timerDisplay.textContent = timerValue;
+    timerDisplay.classList.toggle('overtime', timerValue < 0);
+  }
 
-        if (key === 'c') {
-          event.preventDefault();
-          deleteCurrentCard();
-          return;
-        }
+  function stopTimer() {
+    if (timerInterval !== null) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+  }
 
-        if (event.key === '-' || event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
-          event.preventDefault();
-          move(-1);
-          return;
-        }
+  function applyAutoStarIfNeeded() {
+    const card = currentCard();
+    if (!card || card.virtual || !autoToggle.checked || timerValue > 0 || autoHandledCardId === card.id) return;
+    if (!starredIds.has(card.id)) {
+      starredIds.add(card.id);
+      markCurrentVisitUnknown(card, 'auto-star-at-zero');
+    }
+    autoHandledCardId = card.id;
+    render();
+  }
 
-        if (event.key === '=' || event.key === 'ArrowRight' || event.key === 'ArrowDown') {
-          event.preventDefault();
-          move(1);
-        }
-      });
-
-      switchMobileTab('home');
-      render();
+  function startTimerTicking() {
+    if (timerInterval !== null || !currentCard() || currentCard().virtual || timingSuspensionReasons.size) return;
+    timerInterval = setInterval(() => {
+      timerValue -= 1;
       updateTimerDisplay();
-    })();
+      applyAutoStarIfNeeded();
+    }, 1000);
+  }
+
+  function suspendTiming(reason) {
+    if (timingSuspensionReasons.has(reason)) return;
+    if (!timingSuspensionReasons.size) timingSuspendedAt = performance.now();
+    timingSuspensionReasons.add(reason);
+    stopTimer();
+  }
+
+  function resumeTiming(reason) {
+    timingSuspensionReasons.delete(reason);
+    if (timingSuspensionReasons.size) return;
+    if (activeVisit && timingSuspendedAt !== null) {
+      activeVisit.startedAtPerformance += performance.now() - timingSuspendedAt;
+    }
+    timingSuspendedAt = null;
+    startTimerTicking();
+  }
+
+  function resetTimer() {
+    stopTimer();
+    timerValue = 5;
+    autoHandledCardId = null;
+    updateTimerDisplay();
+    startTimerTicking();
+  }
+
+  function switchMobileTab(pageName) {
+    mobilePages.forEach(page => page.classList.toggle('mobile-active', page.dataset.mobilePage === pageName));
+    mobileTabs.forEach(tab => {
+      const isActive = tab.dataset.tabTarget === pageName;
+      tab.classList.toggle('active', isActive);
+      tab.setAttribute('aria-current', isActive ? 'page' : 'false');
+    });
+  }
+
+  function showHomeOnMobile() {
+    if (mobileMedia.matches) switchMobileTab('home');
+  }
+
+  function buildStudyPairs() {
+    const pairs = [];
+    sourceCards.forEach(card => {
+      // 中文卡即使带有少量英文字母，也不能被当成独立英文词重复学习。
+      if (!containsEnglish(card.text) || card.pairedEnglishId) return;
+      pairs.push({
+        key: card.memoryKey,
+        english: card,
+        chinese: getChineseForCard(card)
+      });
+    });
+    return pairs;
+  }
+
+  function studyPriority(pair) {
+    const card = pair.english;
+    const entry = getMemoryEntry(card, false);
+    const records = validRecords(entry);
+    const recent = records.slice(-3);
+    const percent = calculateMemoryPercent(card);
+    const average = getAdaptiveAverage();
+    let priority = Math.random() * 25;
+
+    if (starredIds.has(card.id)) priority += 1000;
+    if (!records.length) priority += 520;
+    if (percent !== null) priority += (100 - percent) * 5;
+    else priority += 250;
+    if (recent.some(record => record.incorrect)) priority += 320;
+    if (average && recent.length) {
+      const latestCorrect = [...recent].reverse().find(record => !record.incorrect);
+      if (latestCorrect) priority += clamp((latestCorrect.duration / average - 1) * 220, -80, 320);
+    }
+    return priority;
+  }
+
+  function rankStudyPairs(pairs) {
+    return pairs
+      .map(pair => ({ pair, priority: studyPriority(pair) }))
+      .sort((a, b) => b.priority - a.priority)
+      .map(item => item.pair);
+  }
+
+  function studyCardFromPair(pair, appearance = null, source = 'planned') {
+    return {
+      ...pair.english,
+      studyChinese: pair.chinese,
+      studyPairKey: pair.key,
+      studyPair: pair,
+      smartAppearance: appearance,
+      smartScheduleSource: source
+    };
+  }
+
+  function cardsFromStudyPairs(pairs) {
+    return pairs.map(pair => studyCardFromPair(pair));
+  }
+
+  function latestCorrectDurationForPair(pair) {
+    const entry = getMemoryEntry(pair.english, false);
+    const records = validRecords(entry);
+    const latest = [...records].reverse().find(record => !record.incorrect);
+    return latest ? latest.duration : null;
+  }
+
+  function createAdaptiveLearnPlan(pair) {
+    const card = pair.english;
+    const entry = getMemoryEntry(card, false);
+    const records = validRecords(entry);
+    const recent = records.slice(-3);
+    const percent = calculateMemoryPercent(card);
+    const baseline = getAdaptiveAverage();
+    const historicalReference = latestCorrectDurationForPair(pair);
+    const hasIncorrect = recent.some(record => record.incorrect);
+    const starred = starredIds.has(card.id);
+    let minAppearances = 1;
+
+    // 首轮次数由历史熟练度决定。56% 这类中低熟练词至少出现两遍；
+    // 明显不会、带纠错记录或极低熟练度的词先安排三遍。
+    if (starred || hasIncorrect || (percent !== null && percent < 40)) {
+      minAppearances = 3;
+    } else if (percent === null || percent < 70) {
+      minAppearances = 2;
+    }
+
+    // 历史反应明显慢于个人平均时，再提高最低曝光次数。
+    if (baseline && historicalReference) {
+      const ratio = historicalReference / baseline;
+      if (ratio > 1.75) minAppearances = Math.max(minAppearances, 3);
+      else if (ratio > 1.2) minAppearances = Math.max(minAppearances, 2);
+    }
+
+    return {
+      pair,
+      minAppearances: clamp(minAppearances, 1, 3),
+      maxAppearances: 4,
+      baselineAtStart: baseline,
+      historicalReference,
+      startingPercent: percent,
+      scheduledAppearances: 0,
+      completed: false
+    };
+  }
+
+  function buildAdaptiveLearningDeck(pairs) {
+    smartState.learnPlans = new Map();
+    smartState.learnAttempts = new Map();
+    return pairs.map(pair => studyCardFromPair(pair, 1, 'sequential'));
+  }
+
+  function hasFutureStudyAppearance(memoryKey) {
+    return deck.slice(currentIndex + 1).some(card => card.studyPairKey === memoryKey);
+  }
+
+  function removeFutureStudyAppearances(memoryKey) {
+    const before = deck.slice(0, currentIndex + 1);
+    const after = deck.slice(currentIndex + 1).filter(card => card.studyPairKey !== memoryKey);
+    deck = before.concat(after);
+  }
+
+  function scheduleAnotherStudyAppearance(plan, reason = 'current-behavior-repeat') {
+    const attempts = smartState.learnAttempts.get(plan.pair.key) || [];
+    if (attempts.length >= plan.maxAppearances || hasFutureStudyAppearance(plan.pair.key)) return false;
+    plan.scheduledAppearances += 1;
+    deck.push(studyCardFromPair(plan.pair, attempts.length + 1, reason));
+    return true;
+  }
+
+  function getAdaptiveAverageExcludingRecord(excludedRecord) {
+    const values = [];
+    Object.values(memoryStore.cards).forEach(entry => {
+      validRecords(entry).forEach(record => {
+        if (!record.incorrect && record !== excludedRecord) values.push(record.duration);
+      });
+    });
+    if (!values.length) return Number.isFinite(memoryStore.importedAverage) ? memoryStore.importedAverage : null;
+    const sorted = values.sort((a, b) => a - b);
+    let sample = sorted;
+    if (sorted.length >= 10) {
+      const trim = Math.max(1, Math.floor(sorted.length * 0.1));
+      sample = sorted.slice(trim, sorted.length - trim);
+    }
+    return sample.reduce((sum, value) => sum + value, 0) / sample.length;
+  }
+
+  function evaluateSmartLearnAttempt(outcome) {
+    if (!outcome) return { success: false, reason: 'missing' };
+    if (outcome.incorrect) return { success: false, reason: 'starred' };
+    if (!outcome.tracked) return { success: true, reason: 'tracking-paused' };
+    if (!outcome.valid || !Number.isFinite(outcome.duration)) return { success: false, reason: 'interrupted' };
+
+    const fastEnough = outcome.duration <= SMART_PASS_SECONDS;
+    return {
+      success: fastEnough,
+      reason: fastEnough ? 'within-5s' : 'over-5s'
+    };
+  }
+
+  function isSmartPassOutcome(outcome) {
+    return Boolean(outcome
+      && outcome.tracked
+      && outcome.valid
+      && !outcome.incorrect
+      && Number.isFinite(outcome.duration)
+      && outcome.duration <= SMART_PASS_SECONDS);
+  }
+
+  function clearPassFeedback() {
+    if (passFeedbackTimer !== null) {
+      clearTimeout(passFeedbackTimer);
+      passFeedbackTimer = null;
+    }
+    wordCard.classList.remove('pass-flash');
+  }
+
+  function showPassFeedback(outcome) {
+    clearPassFeedback();
+    passFeedback.textContent = `通过 ${formatSeconds(outcome.duration)}`;
+    wordCard.classList.add('pass-flash');
+    passFeedbackTimer = window.setTimeout(clearPassFeedback, 520);
+  }
+
+  function recordSmartLearnAttempt(card, outcome) {
+    if (!smartState.active || smartState.phase !== 'learn' || !card || card.virtual) return;
+    const key = card.studyPairKey || card.memoryKey;
+    const attempts = smartState.learnAttempts.get(key) || [];
+    attempts.push({
+      duration: outcome && Number.isFinite(outcome.duration) ? outcome.duration : null,
+      valid: Boolean(outcome && outcome.valid),
+      tracked: Boolean(outcome && outcome.tracked),
+      incorrect: Boolean(outcome && outcome.incorrect),
+      revealed: Boolean(outcome && outcome.revealed),
+      success: false,
+      reason: 'learn-only'
+    });
+    smartState.learnAttempts.set(key, attempts);
+  }
+
+  function prepareSmartLearningRound(pairs) {
+    smartState.revealed = false;
+    deck = buildAdaptiveLearningDeck(pairs);
+    currentIndex = deck.length ? 0 : -1;
+    smartState.previewMaxIndex = currentIndex;
+    return deck.length;
+  }
+
+  function resetSessionData() {
+    stopTimer();
+    clearPassFeedback();
+    discardVisit();
+    smartMovePending = false;
+    sourceCards = [];
+    deck = [];
+    currentIndex = -1;
+    starredIds.clear();
+    memoryStore = createEmptyMemoryStore();
+    smartState = createSmartState();
+    navigationSerial = 0;
+    lastCorrectPassByKey.clear();
+    copyStatus.textContent = '';
+    memoryCopyStatus.textContent = '';
+  }
+
+  function loadFreshSourceFromInput() {
+    // 若用户把旧版看板数据直接粘贴进输入框，先用当前批次中原有的
+    // “英文一行、中文一行”配对为没有中文列的旧看板补齐释义。
+    const fallbackChineseLookup = buildChineseLookupFromCards(sourceCards);
+    resetSessionData();
+    const bundle = parseInputBundle(wordInput.value, fallbackChineseLookup);
+    sourceCards = bundle.cards;
+    memoryStore = bundle.memoryStore;
+    bundle.importedStarredKeys.forEach(memoryKey => {
+      const card = sourceCards.find(item => item.memoryKey === memoryKey);
+      if (card) starredIds.add(card.id);
+    });
+    lastLoadedInputSignature = inputSignature(wordInput.value);
+    return bundle;
+  }
+
+  function importedStatusText(bundle) {
+    return bundle.dashboardDetected
+      ? `已识别看板数据并导入 ${bundle.importedCount} 个英文单词的历史记录。`
+      : '';
+  }
+
+  function renderSmartCard(card) {
+    const smartActive = smartState.active;
+    wordCard.classList.toggle('study-mode', smartActive);
+    wordCard.classList.toggle('test-mode', smartActive && smartState.phase === 'test');
+    wordCard.classList.toggle('study-complete', Boolean(card && card.virtual));
+    studyPhaseBadge.hidden = !smartActive;
+    studyChinese.hidden = !smartActive || !smartState.revealed || Boolean(card && card.virtual);
+    studyInstruction.hidden = !smartActive || Boolean(card && card.virtual);
+
+    if (!smartActive) return;
+    if (card && card.virtual) {
+      studyPhaseBadge.textContent = '完成';
+      studyInstruction.hidden = true;
+      studyChinese.hidden = true;
+      return;
+    }
+
+    if (smartState.phase === 'test') {
+      studyPhaseBadge.textContent = '测试！';
+      studyInstruction.textContent = '先回想中文；自己点击或 Tab 查看中文算错。按下一个后会自动显示中文 2 秒，这不算错。';
+    } else {
+      studyPhaseBadge.textContent = `智能学习 · 第 ${smartState.round} 轮`;
+      studyInstruction.textContent = '按当前顺序每个词学一遍；点击或 Tab 查看中文，学完直接进入测试。';
+    }
+    studyChinese.textContent = getChineseForCard(card) || '这张英文卡没有匹配到下一行中文释义';
+  }
+
+  function render() {
+    const card = currentCard();
+    const starredCards = sourceCards.filter(item => starredIds.has(item.id));
+    const previewIndex = smartState.active
+      ? Math.max(currentIndex, Math.min(smartState.previewMaxIndex, deck.length - 1))
+      : currentIndex;
+
+    totalCount.textContent = deck.length;
+    currentCount.textContent = deck.length ? `${previewIndex + 1} / ${deck.length}` : '0 / 0';
+    starredCount.textContent = starredCards.length;
+    unstarredCount.textContent = Math.max(0, deck.length - starredCards.length);
+    unknownList.value = starredCards.map(item => item.text).join('\n');
+
+    if (!card) {
+      wordDisplay.textContent = '请先在左侧输入内容并点击加载';
+      wordDisplay.classList.add('empty-text');
+      wordCard.classList.remove('starred', 'memory-enabled', 'study-mode', 'test-mode', 'study-complete');
+      memoryScore.hidden = true;
+      memoryTimes.hidden = true;
+      studyPhaseBadge.hidden = true;
+      studyChinese.hidden = true;
+      studyInstruction.hidden = true;
+      updateMemoryToolbar();
+      updateBufferButton();
+      return;
+    }
+
+    wordDisplay.textContent = card.text;
+    wordDisplay.classList.toggle('empty-text', Boolean(card.virtual));
+    wordCard.classList.toggle('starred', !card.virtual && starredIds.has(card.id));
+    renderMemoryForCard(card);
+    renderSmartCard(card);
+    updateMemoryToolbar();
+    updateBufferButton();
+  }
+
+  function transitionToFreshDeck(builder) {
+    const bundle = loadFreshSourceFromInput();
+    builder(bundle);
+    render();
+    resetTimer();
+    startVisit();
+    showHomeOnMobile();
+  }
+
+  function loadWords() {
+    transitionToFreshDeck(bundle => {
+      mode = 'random';
+      deck = smartShuffle(sourceCards);
+      currentIndex = deck.length ? 0 : -1;
+      const paired = hasEnglishChinesePairs(sourceCards);
+      loadStatus.textContent = deck.length
+        ? `已加载 ${deck.length} 张卡片，${paired ? '检测到中英配对，已按两行一组随机排列。' : '已完成单卡随机排列。'}${importedStatusText(bundle)}`
+        : '没有检测到有效内容，请至少输入一行非空文字。';
+    });
+  }
+
+  function startInOrder() {
+    transitionToFreshDeck(bundle => {
+      mode = 'sequential';
+      deck = [...sourceCards];
+      currentIndex = deck.length ? 0 : -1;
+      loadStatus.textContent = deck.length
+        ? `已从头开始按顺序出卡，共 ${deck.length} 张。${importedStatusText(bundle)}`
+        : '没有检测到有效内容，请至少输入一行非空文字。';
+    });
+  }
+
+  function reshuffleInPairs() {
+    if (!wordInput.value.trim()) {
+      loadStatus.textContent = '请先输入单词列表或粘贴看板数据。';
+      return;
+    }
+    transitionToFreshDeck(bundle => {
+      mode = 'paired-random';
+      deck = shuffleInPairs(sourceCards);
+      currentIndex = deck.length ? 0 : -1;
+      const pairCount = Math.floor(sourceCards.length / 2);
+      const hasSingleTail = sourceCards.length % 2 === 1;
+      loadStatus.textContent = `已按每两行一组随机排列，共 ${pairCount} 组${hasSingleTail ? '，最后一行单独保留' : ''}。${importedStatusText(bundle)}`;
+    });
+  }
+
+  function startSmartLearning() {
+    const signature = inputSignature(wordInput.value);
+    let bundle = null;
+    if (!sourceCards.length || signature !== lastLoadedInputSignature) {
+      bundle = loadFreshSourceFromInput();
+    } else {
+      finishVisit('smart-mode-start');
+      smartState = createSmartState();
+    }
+
+    const pairs = buildStudyPairs();
+    if (!pairs.length) {
+      mode = 'smart';
+      deck = [];
+      currentIndex = -1;
+      loadStatus.textContent = '智能学习需要至少一张含英文的卡片。建议按“英文一行、中文一行”粘贴。';
+      render();
+      resetTimer();
+      showHomeOnMobile();
+      return;
+    }
+
+    smartState.active = true;
+    smartState.phase = 'learn';
+    smartState.round = 1;
+    smartState.allPairs = pairs;
+    smartState.workingPairs = pairs;
+    mode = 'smart';
+    const scheduledCount = prepareSmartLearningRound(smartState.workingPairs);
+    const missingChinese = pairs.filter(pair => !pair.chinese).length;
+    loadStatus.textContent = `智能学习已开始：已读取 ${pairs.length} 个单词，学习阶段按当前顺序每个词出现一次，共 ${scheduledCount} 张；学完直接进入测试。${missingChinese ? `其中 ${missingChinese} 个单词没有匹配到中文。` : ''}${bundle ? importedStatusText(bundle) : ''}`;
+    render();
+    resetTimer();
+    startVisit();
+    showHomeOnMobile();
+  }
+
+  function revealSmartChinese() {
+    const card = currentCard();
+    if (!smartState.active || !card || card.virtual || smartState.revealed) return;
+    smartState.revealed = true;
+    if (activeVisit && activeVisit.cardId === card.id) {
+      activeVisit.revealed = true;
+      const elapsed = currentVisitElapsed();
+      if (Number.isFinite(elapsed)) activeVisit.decisionDuration = elapsed;
+      if (smartState.phase === 'test') {
+        activeVisit.markedUnknown = true;
+        activeVisit.unknownReason = 'smart-test-manual-reveal';
+      }
+    }
+    stopTimer();
+    render();
+  }
+
+  function recordSmartTestAttempt(card, outcome) {
+    if (!smartState.active || smartState.phase !== 'test' || !card || card.virtual) return;
+    smartState.testAttempts.set(card.memoryKey, {
+      duration: outcome && Number.isFinite(outcome.duration) ? outcome.duration : null,
+      valid: Boolean(outcome && outcome.valid),
+      tracked: Boolean(outcome && outcome.tracked),
+      incorrect: Boolean(outcome && outcome.incorrect),
+      revealed: Boolean(outcome && outcome.revealed),
+      reason: outcome ? outcome.reason : 'missing-attempt'
+    });
+  }
+
+  function startSmartTestPhase() {
+    smartState.phase = 'test';
+    smartState.testAttempts = new Map();
+    smartState.revealed = false;
+    // 测试前清掉本轮复习中的星标，给每个词一次重新证明“已经会了”的机会。
+    smartState.workingPairs.forEach(pair => starredIds.delete(pair.english.id));
+    smartState.workingPairs = [...smartState.workingPairs];
+    smartState.phaseBaseline = getAdaptiveAverage();
+    smartState.phaseThreshold = SMART_PASS_SECONDS;
+    deck = cardsFromStudyPairs(smartState.workingPairs);
+    currentIndex = 0;
+    smartState.previewMaxIndex = currentIndex;
+    loadStatus.textContent = `第 ${smartState.round} 轮复习完成，进入测试。5 秒内切到下一个算通过；自己点击或 Tab 查看中文算错，按下一个后自动显示中文 2 秒不算错。`;
+    render();
+    resetTimer();
+    startVisit();
+  }
+
+  function finishSmartTestPhase() {
+    const threshold = SMART_PASS_SECONDS;
+    const failed = [];
+    let slowCount = 0;
+    let starredCount = 0;
+    let manualRevealCount = 0;
+    let interruptedCount = 0;
+
+    smartState.workingPairs.forEach(pair => {
+      const attempt = smartState.testAttempts.get(pair.key);
+      let didFail = false;
+      let failureType = '';
+
+      if (!attempt) {
+        didFail = true;
+        failureType = 'interrupted';
+        interruptedCount += 1;
+      } else if (attempt.incorrect) {
+        didFail = true;
+        if (attempt.reason === 'smart-test-star') {
+          failureType = 'starred';
+          starredCount += 1;
+        } else {
+          failureType = 'manual-reveal';
+          manualRevealCount += 1;
+        }
+      } else if (!attempt.tracked) {
+        // 暂停记录时不使用停留时间判定，只看是否星标。
+        didFail = false;
+      } else if (!attempt.valid) {
+        didFail = true;
+        failureType = 'interrupted';
+        interruptedCount += 1;
+      } else if (threshold && attempt.duration > threshold) {
+        didFail = true;
+        failureType = 'slow';
+        slowCount += 1;
+      }
+
+      if (didFail) {
+        failed.push(pair);
+        if (failureType === 'starred') starredIds.add(pair.english.id);
+      } else {
+        // 后续测试快速通过后，自动移除旧星标，表示已经重新学会。
+        starredIds.delete(pair.english.id);
+      }
+    });
+
+    if (!failed.length) {
+      smartState.phase = 'complete';
+      smartState.completionMessage = `全部 ${smartState.allPairs.length} 个单词已通过智能测试`;
+      deck = [{
+        id: `smart-complete-${Date.now()}`,
+        text: `${smartState.completionMessage} ✓`,
+        virtual: true,
+        memoryKey: 'smart-complete'
+      }];
+      currentIndex = 0;
+      smartState.revealed = false;
+      loadStatus.textContent = `智能学习完成：共进行 ${smartState.round} 轮，当前批次全部通过。重新点击“加载、顺序或成对打乱”会开始全新批次并清空本批记忆数据。`;
+      render();
+      resetTimer();
+      return;
+    }
+
+    smartState.phase = 'learn';
+    smartState.round += 1;
+    smartState.workingPairs = failed;
+    prepareSmartLearningRound(smartState.workingPairs);
+    const reasonParts = [];
+    if (starredCount) reasonParts.push(`${starredCount} 个星标`);
+    if (manualRevealCount) reasonParts.push(`${manualRevealCount} 个手动查看中文`);
+    if (slowCount) reasonParts.push(`${slowCount} 个超过 5 秒`);
+    if (interruptedCount) reasonParts.push(`${interruptedCount} 个超过 40 秒或未形成有效记录`);
+    loadStatus.textContent = `测试完成：${failed.length} 个词进入第 ${smartState.round} 轮重新学习，按当前顺序各出现一次（${reasonParts.join('，')}）。5 秒内通过的词不会进入下一轮，除非被标星。`;
+    render();
+    resetTimer();
+    startVisit();
+  }
+
+  function moveSmart(delta) {
+    if (!deck.length || smartState.phase === 'complete' || smartMovePending) return;
+    const card = currentCard();
+    const phaseAtMove = smartState.phase;
+    const wasRevealedBeforeMove = smartState.revealed;
+    const outcome = finishVisit(delta > 0 ? 'smart-next' : 'smart-previous');
+    navigationSerial += 1;
+    if (phaseAtMove === 'test') recordSmartTestAttempt(card, outcome);
+    else if (phaseAtMove === 'learn') recordSmartLearnAttempt(card, outcome);
+
+    const completeMove = () => {
+      clearPassFeedback();
+      smartMovePending = false;
+
+      if (delta < 0) {
+        currentIndex = Math.max(0, currentIndex - 1);
+        smartState.revealed = false;
+        render();
+        resetTimer();
+        startVisit();
+        return;
+      }
+
+      if (currentIndex < deck.length - 1) {
+        currentIndex += 1;
+        smartState.previewMaxIndex = Math.max(smartState.previewMaxIndex, currentIndex);
+        smartState.revealed = false;
+        render();
+        resetTimer();
+        startVisit();
+        return;
+      }
+
+      if (smartState.phase === 'learn') startSmartTestPhase();
+      else finishSmartTestPhase();
+    };
+
+    if (delta > 0 && phaseAtMove === 'learn' && smartChineseBufferEnabled && !wasRevealedBeforeMove) {
+      smartMovePending = true;
+      smartState.revealed = true;
+      stopTimer();
+      render();
+      window.setTimeout(completeMove, 2000);
+      return;
+    }
+
+    if (delta > 0 && phaseAtMove === 'test') {
+      smartMovePending = true;
+      smartState.revealed = true;
+      stopTimer();
+      render();
+      if (isSmartPassOutcome(outcome)) showPassFeedback(outcome);
+      window.setTimeout(completeMove, 2000);
+      return;
+    }
+
+    completeMove();
+  }
+
+  function move(delta) {
+    if (!deck.length) return;
+    if (smartState.active) {
+      moveSmart(delta);
+      return;
+    }
+    finishVisit(delta > 0 ? 'next' : 'previous');
+    navigationSerial += 1;
+    currentIndex = (currentIndex + delta + deck.length) % deck.length;
+    render();
+    resetTimer();
+    startVisit();
+  }
+
+  function toggleStar() {
+    const card = currentCard();
+    if (!card || card.virtual) return;
+    if (starredIds.has(card.id)) {
+      starredIds.delete(card.id);
+    } else {
+      starredIds.add(card.id);
+      markCurrentVisitUnknown(card, smartState.active && smartState.phase === 'test' ? 'smart-test-star' : 'manual-star');
+    }
+    render();
+  }
+
+  function deleteCurrentCard() {
+    const card = currentCard();
+    if (!card || card.virtual) {
+      loadStatus.textContent = '当前没有可以删除的卡片。';
+      return;
+    }
+
+    finishVisit('delete');
+    const deletedText = card.text;
+    const idsToDelete = new Set([card.id]);
+    if (smartState.active) {
+      const source = findSourceCardById(card.id);
+      if (source && source.pairedChineseId) idsToDelete.add(source.pairedChineseId);
+    }
+    idsToDelete.forEach(id => starredIds.delete(id));
+    delete memoryStore.cards[card.memoryKey];
+    sourceCards = sourceCards.filter(item => !idsToDelete.has(item.id));
+
+    if (smartState.active) {
+      smartState.allPairs = smartState.allPairs.filter(pair => pair.key !== card.memoryKey);
+      smartState.workingPairs = smartState.workingPairs.filter(pair => pair.key !== card.memoryKey);
+      deck = deck.filter(item => item.memoryKey !== card.memoryKey);
+    } else {
+      deck = deck.filter(item => !idsToDelete.has(item.id));
+    }
+
+    wordInput.value = sourceCards.map(item => item.text).join('\n');
+    lastLoadedInputSignature = inputSignature(wordInput.value);
+    if (!deck.length) currentIndex = -1;
+    else if (currentIndex >= deck.length) currentIndex = deck.length - 1;
+    loadStatus.textContent = `已删除“${deletedText}”，当前批次和左侧列表已同步更新。`;
+    render();
+    resetTimer();
+    startVisit();
+  }
+
+  function addMatchedChinese() {
+    if (!sourceCards.length) {
+      const bundle = loadFreshSourceFromInput();
+      loadStatus.textContent = importedStatusText(bundle);
+    }
+    if (!sourceCards.length) {
+      copyStatus.textContent = '没有可匹配的内容。';
+      return;
+    }
+    let added = 0;
+    let matched = 0;
+    sourceCards.forEach(card => {
+      if (!containsEnglish(card.text) || !starredIds.has(card.id) || !card.pairedChineseId) return;
+      matched += 1;
+      if (!starredIds.has(card.pairedChineseId)) {
+        starredIds.add(card.pairedChineseId);
+        added += 1;
+      }
+    });
+    if (added) copyStatus.textContent = `已为 ${added} 个星标英文补上对应中文。`;
+    else if (matched) copyStatus.textContent = '对应中文已经全部在星标列表中。';
+    else copyStatus.textContent = '没有找到“已星标英文 + 下一行中文”的配对。';
+    render();
+  }
+
+  async function copyText(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (_) {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      const success = document.execCommand('copy');
+      textarea.remove();
+      return success;
+    }
+  }
+
+  async function copyUnknowns() {
+    const text = unknownList.value;
+    if (!text) {
+      copyStatus.textContent = '当前没有星标内容。';
+      return;
+    }
+    const success = await copyText(text);
+    copyStatus.textContent = success ? `已复制 ${starredIds.size} 行内容。` : '复制失败，请手动全选复制。';
+  }
+
+  function boardCards() {
+    const seen = new Set();
+    return sourceCards.filter(card => {
+      if (!containsEnglish(card.text) || seen.has(card.memoryKey)) return false;
+      seen.add(card.memoryKey);
+      return true;
+    });
+  }
+
+  function escapeHtml(value) {
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function renderMemoryBoard() {
+    const cards = boardCards();
+    const average = getAdaptiveAverage();
+    const totalValid = Object.values(memoryStore.cards)
+      .reduce((sum, entry) => sum + validRecords(entry).length, 0);
+    memoryModalSummary.textContent = average
+      ? `个人有效平均反应 ${formatSeconds(average)} · 共 ${totalValid} 条有效记录 · 超过 40 秒不计入`
+      : '尚无有效反应记录 · 超过 40 秒不计入 · 只记录含英文的卡片';
+
+    if (!cards.length) {
+      memoryBoardBody.innerHTML = '<tr><td class="memory-board-empty" colspan="6">当前批次中没有含英文的卡片。</td></tr>';
+      return;
+    }
+
+    memoryBoardBody.innerHTML = cards.map(card => {
+      const entry = getMemoryEntry(card, false);
+      const records = validRecords(entry);
+      const recent = records.slice(-3).reverse();
+      const percent = isCardStarredByMemoryKey(card.memoryKey) ? 0 : calculateMemoryPercent(card);
+      const fillPercent = percent === null ? 0 : clamp(percent, 0, 100);
+      const recentText = recent.length
+        ? recent.map(record => `${record.incorrect ? '× ' : ''}${formatSeconds(record.duration)}`).join(' / ')
+        : '暂无';
+      const status = isCardStarredByMemoryKey(card.memoryKey)
+        ? '已星标，不认识'
+        : records.some(record => record.incorrect)
+          ? '包含纠错记录'
+          : records.length ? '正常记录' : '未记录';
+      return `<tr class="memory-board-row" style="--memory-fill: ${fillPercent}%;">
+        <td class="memory-board-word">${escapeHtml(card.text)}</td>
+        <td>${escapeHtml(getChineseForCard(card) || '—')}</td>
+        <td class="memory-board-score">${percent === null ? '--' : `${percent}%`}</td>
+        <td class="memory-board-times">${escapeHtml(recentText)}</td>
+        <td>${records.length}</td>
+        <td>${escapeHtml(status)}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  function isWrongMemoryCard(card) {
+    const entry = getMemoryEntry(card, false);
+    const records = validRecords(entry);
+    const starred = isCardStarredByMemoryKey(card.memoryKey);
+    const percent = starred ? 0 : calculateMemoryPercent(card);
+    return Boolean(starred
+      || records.some(record => Number.isFinite(record.duration) && record.duration > SMART_PASS_SECONDS)
+      || (percent !== null && percent < 60));
+  }
+
+  function buildMemoryExport(cards = boardCards()) {
+    const average = getAdaptiveAverage();
+    const lines = [
+      `个人有效平均反应时间\t${average ? formatSeconds(average) : '暂无'}`,
+      `导出时间\t${new Date().toLocaleString()}`,
+      '',
+      '单词\t中文\t记忆程度\t最近三次\t所有有效反应时间\t状态'
+    ];
+
+    cards.forEach(card => {
+      const entry = getMemoryEntry(card, false);
+      const records = validRecords(entry);
+      const recent = records.slice(-3).reverse()
+        .map(record => `${record.incorrect ? '错误:' : ''}${formatSeconds(record.duration)}`).join(' / ') || '暂无';
+      const all = records.map(record => {
+        const time = new Date(record.endedAt || Date.now()).toLocaleString();
+        return `${formatSeconds(record.duration)}${record.incorrect ? '(错误)' : ''}@${time}`;
+      }).join(' | ') || '暂无';
+      const starred = isCardStarredByMemoryKey(card.memoryKey);
+      const percent = starred ? 0 : calculateMemoryPercent(card);
+      const status = starred
+        ? '已星标，不认识'
+        : records.some(record => record.incorrect)
+          ? '包含纠错记录'
+          : records.length ? '正常记录' : '未记录';
+      lines.push([
+        card.text.replace(/\t/g, ' '),
+        (getChineseForCard(card) || '').replace(/\t/g, ' '),
+        percent === null ? '--' : `${percent}%`,
+        recent,
+        all,
+        status
+      ].join('\t'));
+    });
+    return lines.join('\n');
+  }
+
+  function wrongMemoryCards() {
+    return boardCards().filter(isWrongMemoryCard);
+  }
+
+  function openMemoryBoard() {
+    suspendTiming('memory-board');
+    renderMemoryBoard();
+    memoryCopyStatus.textContent = '';
+    memoryModal.classList.add('open');
+    memoryModal.setAttribute('aria-hidden', 'false');
+    memoryCloseBtn.focus();
+  }
+
+  function closeMemoryBoard() {
+    memoryModal.classList.remove('open');
+    memoryModal.setAttribute('aria-hidden', 'true');
+    resumeTiming('memory-board');
+    memoryBoardBtn.focus();
+  }
+
+  function toggleTracking() {
+    if (trackingEnabled) {
+      discardVisit();
+      trackingEnabled = false;
+    } else {
+      trackingEnabled = true;
+      startVisit();
+    }
+    try {
+      localStorage.setItem(MEMORY_TRACKING_KEY, String(trackingEnabled));
+    } catch (_) {}
+    updateMemoryToolbar();
+  }
+
+  function isTypingTarget(target) {
+    return target instanceof HTMLTextAreaElement || target instanceof HTMLInputElement || target.isContentEditable;
+  }
+
+  mobileTabs.forEach(tab => {
+    tab.addEventListener('click', () => switchMobileTab(tab.dataset.tabTarget));
+  });
+
+  autoToggle.addEventListener('change', () => {
+    try {
+      localStorage.setItem('wordcard-auto-star', String(autoToggle.checked));
+    } catch (_) {}
+    applyAutoStarIfNeeded();
+  });
+
+  memoryPauseBtn.addEventListener('click', toggleTracking);
+  memoryBoardBtn.addEventListener('click', openMemoryBoard);
+  memoryCloseBtn.addEventListener('click', closeMemoryBoard);
+  memoryModal.addEventListener('click', event => {
+    if (event.target === memoryModal) closeMemoryBoard();
+  });
+  memoryCopyBtn.addEventListener('click', async () => {
+    const success = await copyText(buildMemoryExport());
+    memoryCopyStatus.textContent = success
+      ? '已复制当前批次的单词、中文、全部反应时间和记忆结果；可直接粘贴回来继续智能学习。'
+      : '复制失败，请稍后重试。';
+  });
+  memoryCopyWrongBtn.addEventListener('click', async () => {
+    const cards = wrongMemoryCards();
+    if (!cards.length) {
+      memoryCopyStatus.textContent = '当前没有符合条件的错词。';
+      return;
+    }
+    const success = await copyText(buildMemoryExport(cards));
+    memoryCopyStatus.textContent = success
+      ? `已复制 ${cards.length} 个错词：超过 5 秒、星标或记忆程度低于 60% 的词。`
+      : '复制失败，请稍后重试。';
+  });
+
+  loadBtn.addEventListener('click', loadWords);
+  orderBtn.addEventListener('click', startInOrder);
+  pairShuffleBtn.addEventListener('click', reshuffleInPairs);
+  smartStudyBtn.addEventListener('click', startSmartLearning);
+  prevBtn.addEventListener('click', () => move(-1));
+  nextBtn.addEventListener('click', () => move(1));
+  starBtn.addEventListener('click', toggleStar);
+  deleteBtn.addEventListener('click', deleteCurrentCard);
+  bufferBtn.addEventListener('click', () => {
+    smartChineseBufferEnabled = !smartChineseBufferEnabled;
+    updateBufferButton();
+  });
+  copyBtn.addEventListener('click', copyUnknowns);
+  addChineseBtn.addEventListener('click', addMatchedChinese);
+
+  selectBtn.addEventListener('click', () => {
+    unknownList.focus();
+    unknownList.select();
+    copyStatus.textContent = unknownList.value ? '已全选，可以按 Ctrl/Cmd + C 复制。' : '当前没有星标内容。';
+  });
+
+  clearStarsBtn.addEventListener('click', () => {
+    starredIds.clear();
+    copyStatus.textContent = '已清空全部星标。';
+    render();
+  });
+
+  wordCard.addEventListener('click', event => {
+    if (suppressNextCardClick) {
+      suppressNextCardClick = false;
+      return;
+    }
+    if (event.target.closest('.memory-score, .memory-times')) return;
+    revealSmartChinese();
+  });
+
+  let touchStartX = 0;
+  let touchStartY = 0;
+  wordCard.addEventListener('touchstart', event => {
+    const touch = event.changedTouches[0];
+    touchStartX = touch.clientX;
+    touchStartY = touch.clientY;
+  }, { passive: true });
+
+  wordCard.addEventListener('touchend', event => {
+    const touch = event.changedTouches[0];
+    const deltaX = touch.clientX - touchStartX;
+    const deltaY = touch.clientY - touchStartY;
+    if (Math.abs(deltaX) < 55 || Math.abs(deltaX) < Math.abs(deltaY) * 1.25) return;
+    suppressNextCardClick = true;
+    move(deltaX < 0 ? 1 : -1);
+    window.setTimeout(() => { suppressNextCardClick = false; }, 350);
+  }, { passive: true });
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) suspendTiming('document-hidden');
+    else resumeTiming('document-hidden');
+  });
+
+  document.addEventListener('keydown', event => {
+    if (memoryModal.classList.contains('open') && event.key === 'Escape') {
+      event.preventDefault();
+      closeMemoryBoard();
+      return;
+    }
+    if (isTypingTarget(event.target)) return;
+    if (event.ctrlKey || event.metaKey || event.altKey) return;
+
+    const key = event.key.toLowerCase();
+    if (key === 'w' || event.key === 'Escape' || event.key === 'Backspace' || event.key === 'Delete') {
+      event.preventDefault();
+      toggleStar();
+      return;
+    }
+    if (key === 'c') {
+      event.preventDefault();
+      deleteCurrentCard();
+      return;
+    }
+    if ((event.key === ' ' || event.key === 'Tab') && smartState.active) {
+      event.preventDefault();
+      revealSmartChinese();
+      return;
+    }
+    if (event.key === '-' || event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      move(-1);
+      return;
+    }
+    if (event.key === '=' || event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+      event.preventDefault();
+      move(1);
+    }
+  });
+
+  window.addEventListener('beforeunload', discardVisit);
+
+  switchMobileTab('home');
+  updateMemoryToolbar();
+  render();
+  updateTimerDisplay();
+})();
+
   </script>
 
 
