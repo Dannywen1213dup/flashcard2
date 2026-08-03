@@ -1,8 +1,7 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<html lang="zh-CN"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>随机单词卡</title>
   <style>
     :root {
@@ -231,6 +230,119 @@
 
     .word-card.starred .star-badge { display: block; }
 
+    .timer-panel {
+      display: flex;
+      min-width: 330px;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      padding: 11px 15px 11px 20px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255,255,255,0.88);
+      box-shadow: 0 9px 30px rgba(31,41,55,0.08);
+    }
+
+    .timer-copy {
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 7px;
+    }
+
+    .timer-label {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .timer-value {
+      min-width: 52px;
+      color: var(--primary);
+      font-size: 30px;
+      font-weight: 900;
+      line-height: 1;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .timer-value.overtime { color: var(--danger); }
+
+    .timer-unit {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .auto-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .auto-toggle input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .auto-label {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: .02em;
+    }
+
+    .switch-track {
+      position: relative;
+      display: inline-block;
+      width: 48px;
+      height: 28px;
+      flex: 0 0 auto;
+      border: 1px solid #cbd5e1;
+      border-radius: 999px;
+      background: #e2e8f0;
+      box-shadow: inset 0 1px 2px rgba(15,23,42,.08);
+      transition: background .2s, border-color .2s, box-shadow .2s;
+    }
+
+    .switch-knob {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: white;
+      box-shadow: 0 2px 7px rgba(15,23,42,.26);
+      transition: transform .2s;
+    }
+
+    .auto-toggle input:checked + .switch-track {
+      border-color: var(--primary);
+      background: var(--primary);
+      box-shadow: 0 0 0 4px rgba(79,70,229,.10);
+    }
+
+    .auto-toggle input:checked + .switch-track .switch-knob {
+      transform: translateX(20px);
+    }
+
+    .auto-toggle input:focus-visible + .switch-track {
+      outline: 3px solid rgba(79,70,229,.22);
+      outline-offset: 2px;
+    }
+
+    .mobile-label,
+    .mobile-tabbar {
+      display: none;
+    }
+
     .controls {
       display: flex;
       align-items: center;
@@ -344,7 +456,7 @@
       text-align: center;
     }
 
-    @media (max-width: 1050px) {
+    @media (max-width: 1050px) and (min-width: 701px) {
       body { overflow: auto; }
       .app {
         grid-template-columns: 1fr;
@@ -358,18 +470,229 @@
       .stats { grid-template-columns: repeat(2, 1fr); }
     }
 
-    @media (max-width: 560px) {
-      .app { padding: 12px; gap: 12px; }
-      .stage { padding: 18px 6px; }
-      .word-card { min-height: 280px; padding: 50px 22px; }
-      .controls { flex-wrap: wrap; justify-content: center; }
-      .nav-btn, .star-btn, .delete-btn { min-width: 100px; }
+    @media (max-width: 700px) {
+      html, body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        overscroll-behavior: none;
+      }
+
+      body {
+        min-height: 100dvh;
+      }
+
+      .app {
+        display: block;
+        width: 100%;
+        height: 100dvh;
+        min-height: 0;
+        padding: 0 0 calc(70px + env(safe-area-inset-bottom));
+      }
+
+      .input-panel,
+      .stage,
+      .unknown-panel {
+        display: none;
+        width: 100%;
+        height: calc(100dvh - 70px - env(safe-area-inset-bottom));
+        min-height: 0;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+      }
+
+      .input-panel.mobile-active,
+      .unknown-panel.mobile-active {
+        display: flex;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .stage.mobile-active {
+        display: flex;
+      }
+
+      .input-panel,
+      .unknown-panel {
+        padding: calc(18px + env(safe-area-inset-top)) 16px 18px;
+        background: rgba(255,255,255,.94);
+      }
+
+      #wordInput,
+      #unknownList {
+        min-height: 250px;
+      }
+
+      .stage {
+        justify-content: flex-start;
+        gap: 10px;
+        padding: calc(10px + env(safe-area-inset-top)) 12px 12px;
+        overflow: hidden;
+      }
+
+      .stats {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        width: 100%;
+        gap: 6px;
+        flex: 0 0 auto;
+      }
+
+      .stat {
+        min-width: 0;
+        padding: 7px 3px;
+        border-radius: 12px;
+      }
+
+      .stat-value {
+        font-size: 16px;
+        white-space: nowrap;
+      }
+
+      .stat-label {
+        margin-top: 2px;
+        overflow: hidden;
+        font-size: 9px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .card-wrap {
+        display: flex;
+        width: 100%;
+        min-height: 0;
+        flex: 1 1 auto;
+      }
+
+      .word-card {
+        width: 100%;
+        min-height: 0;
+        height: 100%;
+        padding: 44px 20px;
+        border-radius: 22px;
+      }
+
+      #wordDisplay {
+        font-size: clamp(34px, 12vw, 64px);
+      }
+
+      .empty-text {
+        font-size: clamp(21px, 7vw, 30px) !important;
+      }
+
+      .star-badge {
+        top: 14px;
+        right: 17px;
+        font-size: 30px;
+      }
+
+      .timer-panel {
+        width: 100%;
+        min-width: 0;
+        flex: 0 0 auto;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 9px 12px 9px 15px;
+        border-radius: 14px;
+      }
+
+      .timer-copy {
+        gap: 5px;
+      }
+
+      .timer-label,
+      .timer-unit,
+      .auto-label {
+        font-size: 12px;
+      }
+
+      .timer-value {
+        min-width: 43px;
+        font-size: 26px;
+      }
+
+      .controls {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        width: 100%;
+        flex: 0 0 auto;
+        gap: 10px;
+      }
+
+      .nav-btn,
+      .star-btn {
+        width: 100%;
+        min-width: 0;
+        height: 56px;
+        padding: 0;
+        border-radius: 16px;
+        font-size: 27px;
+      }
+
+      .star-btn {
+        font-size: 29px;
+      }
+
+      .delete-btn,
+      .keyboard-hint,
+      .desktop-label {
+        display: none;
+      }
+
+      .mobile-label {
+        display: inline;
+      }
+
+      .mobile-tabbar {
+        position: fixed;
+        z-index: 50;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        height: calc(70px + env(safe-area-inset-bottom));
+        padding: 7px 8px calc(7px + env(safe-area-inset-bottom));
+        border-top: 1px solid rgba(203,213,225,.9);
+        background: rgba(255,255,255,.94);
+        box-shadow: 0 -10px 30px rgba(15,23,42,.08);
+        backdrop-filter: blur(18px);
+      }
+
+      .mobile-tab {
+        display: flex;
+        min-width: 0;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        padding: 5px 2px;
+        border-radius: 12px;
+        color: var(--muted);
+        background: transparent;
+        font-size: 11px;
+        font-weight: 750;
+      }
+
+      .mobile-tab-icon {
+        font-size: 19px;
+        line-height: 1;
+      }
+
+      .mobile-tab.active {
+        color: var(--primary);
+        background: #eef2ff;
+      }
+
+      .button-row {
+        padding-bottom: 4px;
+      }
     }
   </style>
 </head>
 <body>
   <main class="app">
-    <section class="panel input-panel">
+    <section class="panel input-panel" data-mobile-page="words">
       <h1 class="title">单词列表</h1>
       <p class="hint">一行一个单词卡。中英词卡建议按“英文一行、中文一行”排列；随机时会自动整对打乱。</p>
       <textarea id="wordInput" spellcheck="false" placeholder="例如：\nabandon\nmeticulous\na blessing in disguise"></textarea>
@@ -381,7 +704,7 @@
       <div id="loadStatus" class="status"></div>
     </section>
 
-    <section class="stage">
+    <section class="stage mobile-active" data-mobile-page="home">
       <div class="stats" aria-label="学习统计">
         <div class="stat">
           <span id="totalCount" class="stat-value">0</span>
@@ -408,27 +731,46 @@
         </article>
       </div>
 
+      <div class="timer-panel" aria-label="当前单词计时与自动星标">
+        <div class="timer-copy">
+          <span class="timer-label">当前词倒计时</span>
+          <span id="timerDisplay" class="timer-value">10</span>
+          <span class="timer-unit">秒</span>
+        </div>
+        <label class="auto-toggle" for="autoToggle" title="开启后，倒计时到 0 时自动给当前卡片添加星标">
+          <span class="auto-label">Auto</span>
+          <input id="autoToggle" type="checkbox" role="switch" aria-label="倒计时结束自动星标">
+          <span class="switch-track" aria-hidden="true"><span class="switch-knob"></span></span>
+        </label>
+      </div>
+
       <div class="controls">
-        <button id="prevBtn" class="nav-btn" type="button">− / ← 上一个</button>
-        <button id="starBtn" class="star-btn" type="button">Esc / W 星标</button>
+        <button id="prevBtn" class="nav-btn" type="button" aria-label="上一个">
+          <span class="desktop-label">− / ← 上一个</span><span class="mobile-label" aria-hidden="true">←</span>
+        </button>
+        <button id="starBtn" class="star-btn" type="button" aria-label="星标或取消星标">
+          <span class="desktop-label">Esc / ⌫ / W 星标</span><span class="mobile-label" aria-hidden="true">★</span>
+        </button>
         <button id="deleteBtn" class="delete-btn" type="button">C 删除</button>
-        <button id="nextBtn" class="nav-btn" type="button">下一个 = / →</button>
+        <button id="nextBtn" class="nav-btn" type="button" aria-label="下一个">
+          <span class="desktop-label">下一个 = / →</span><span class="mobile-label" aria-hidden="true">→</span>
+        </button>
       </div>
 
       <div class="keyboard-hint">
-        <kbd>Esc</kbd><kbd>W</kbd> 星标 / 取消星标　
+        <kbd>Esc</kbd><kbd>⌫</kbd><kbd>W</kbd> 星标 / 取消星标　
         <kbd>C</kbd> 删除当前卡片　
         <kbd>−</kbd><kbd>←</kbd><kbd>↑</kbd> 上一个　
         <kbd>=</kbd><kbd>→</kbd><kbd>↓</kbd> 下一个
       </div>
     </section>
 
-    <section class="panel unknown-panel">
+    <section class="panel unknown-panel" data-mobile-page="unknown">
       <div class="unknown-header">
         <h2 class="unknown-title">不会的 List ★</h2>
         <button id="copyBtn" class="copy-btn" type="button">复制全部</button>
       </div>
-      <textarea id="unknownList" readonly spellcheck="false" placeholder="按 W 星标的内容会出现在这里，每行一个。"></textarea>
+      <textarea id="unknownList" readonly="" spellcheck="false" placeholder="按 W 星标的内容会出现在这里，每行一个。"></textarea>
       <div class="unknown-actions">
         <button id="addChineseBtn" class="small-btn" type="button" title="给已星标英文自动补上其下一行中文">一键加中文</button>
         <button id="selectBtn" class="small-btn" type="button">全选文本</button>
@@ -437,6 +779,21 @@
       <div id="copyStatus" class="status"></div>
     </section>
   </main>
+
+  <nav class="mobile-tabbar" aria-label="手机端页面切换">
+    <button class="mobile-tab" type="button" data-tab-target="words" aria-label="打开单词列表" aria-current="false">
+      <span class="mobile-tab-icon" aria-hidden="true">☰</span>
+      <span>单词列表</span>
+    </button>
+    <button class="mobile-tab active" type="button" data-tab-target="home" aria-label="打开主页" aria-current="page">
+      <span class="mobile-tab-icon" aria-hidden="true">▣</span>
+      <span>主页</span>
+    </button>
+    <button class="mobile-tab" type="button" data-tab-target="unknown" aria-label="打开不会的列表" aria-current="false">
+      <span class="mobile-tab-icon" aria-hidden="true">★</span>
+      <span>不会的 List</span>
+    </button>
+  </nav>
 
   <script>
     (() => {
@@ -461,12 +818,24 @@
       const unstarredCount = document.getElementById('unstarredCount');
       const loadStatus = document.getElementById('loadStatus');
       const copyStatus = document.getElementById('copyStatus');
+      const timerDisplay = document.getElementById('timerDisplay');
+      const autoToggle = document.getElementById('autoToggle');
+      const mobilePages = [...document.querySelectorAll('[data-mobile-page]')];
+      const mobileTabs = [...document.querySelectorAll('[data-tab-target]')];
+      const mobileMedia = window.matchMedia('(max-width: 700px)');
 
       let sourceCards = [];
       let deck = [];
       let currentIndex = -1;
       let mode = 'random';
+      let timerValue = 10;
+      let timerInterval = null;
+      let autoHandledCardId = null;
       const starredIds = new Set();
+
+      try {
+        autoToggle.checked = localStorage.getItem('wordcard-auto-star') === 'true';
+      } catch (_) {}
 
       function createId(index) {
         return `${Date.now()}-${index}-${Math.random().toString(36).slice(2)}`;
@@ -526,6 +895,54 @@
         return currentIndex >= 0 ? deck[currentIndex] : null;
       }
 
+      function updateTimerDisplay() {
+        timerDisplay.textContent = timerValue;
+        timerDisplay.classList.toggle('overtime', timerValue < 0);
+      }
+
+      function stopTimer() {
+        if (timerInterval !== null) {
+          clearInterval(timerInterval);
+          timerInterval = null;
+        }
+      }
+
+      function applyAutoStarIfNeeded() {
+        const card = currentCard();
+        if (!card || !autoToggle.checked || timerValue > 0 || autoHandledCardId === card.id) return;
+        starredIds.add(card.id);
+        autoHandledCardId = card.id;
+        render();
+      }
+
+      function resetTimer() {
+        stopTimer();
+        timerValue = 10;
+        autoHandledCardId = null;
+        updateTimerDisplay();
+        if (!currentCard()) return;
+        timerInterval = setInterval(() => {
+          timerValue -= 1;
+          updateTimerDisplay();
+          applyAutoStarIfNeeded();
+        }, 1000);
+      }
+
+      function switchMobileTab(pageName) {
+        mobilePages.forEach(page => {
+          page.classList.toggle('mobile-active', page.dataset.mobilePage === pageName);
+        });
+        mobileTabs.forEach(tab => {
+          const isActive = tab.dataset.tabTarget === pageName;
+          tab.classList.toggle('active', isActive);
+          tab.setAttribute('aria-current', isActive ? 'page' : 'false');
+        });
+      }
+
+      function showHomeOnMobile() {
+        if (mobileMedia.matches) switchMobileTab('home');
+      }
+
       function render() {
         const card = currentCard();
         const starredCards = sourceCards.filter(item => starredIds.has(item.id));
@@ -572,6 +989,8 @@
           ? `已加载 ${deck.length} 张卡片，${paired ? '检测到中英配对，已按两行一组随机排列。' : '已完成单卡随机排列。'}`
           : '没有检测到有效内容，请至少输入一行非空文字。';
         render();
+        resetTimer();
+        showHomeOnMobile();
       }
 
       function startInOrder() {
@@ -583,6 +1002,8 @@
           ? `已从头开始，按左侧列表顺序出卡，共 ${deck.length} 张。`
           : '没有检测到有效内容，请至少输入一行非空文字。';
         render();
+        resetTimer();
+        showHomeOnMobile();
       }
 
       function reshuffleInPairs() {
@@ -600,6 +1021,8 @@
         const hasSingleTail = sourceCards.length % 2 === 1;
         loadStatus.textContent = `已按每两行一组随机排列，共 ${pairCount} 组${hasSingleTail ? '，最后一行作为单独卡片保留' : ''}。`;
         render();
+        resetTimer();
+        showHomeOnMobile();
       }
 
       function addMatchedChinese() {
@@ -639,6 +1062,7 @@
         if (!deck.length) return;
         currentIndex = (currentIndex + delta + deck.length) % deck.length;
         render();
+        resetTimer();
       }
 
       function toggleStar() {
@@ -673,6 +1097,7 @@
 
         loadStatus.textContent = `已删除“${deletedText}”，左侧列表已同步更新。当前为${mode === 'sequential' ? '顺序' : '随机'}出卡。`;
         render();
+        resetTimer();
       }
 
       async function copyUnknowns() {
@@ -695,6 +1120,17 @@
       function isTypingTarget(target) {
         return target instanceof HTMLTextAreaElement || target instanceof HTMLInputElement || target.isContentEditable;
       }
+
+      mobileTabs.forEach(tab => {
+        tab.addEventListener('click', () => switchMobileTab(tab.dataset.tabTarget));
+      });
+
+      autoToggle.addEventListener('change', () => {
+        try {
+          localStorage.setItem('wordcard-auto-star', String(autoToggle.checked));
+        } catch (_) {}
+        applyAutoStarIfNeeded();
+      });
 
       loadBtn.addEventListener('click', loadWords);
       orderBtn.addEventListener('click', startInOrder);
@@ -723,7 +1159,7 @@
         if (event.ctrlKey || event.metaKey || event.altKey) return;
 
         const key = event.key.toLowerCase();
-        if (key === 'w' || event.key === 'Escape') {
+        if (key === 'w' || event.key === 'Escape' || event.key === 'Backspace') {
           event.preventDefault();
           toggleStar();
           return;
@@ -747,8 +1183,11 @@
         }
       });
 
+      switchMobileTab('home');
       render();
+      updateTimerDisplay();
     })();
   </script>
-</body>
-</html>
+
+
+</body></html>
