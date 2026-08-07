@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>随机单词卡片</title>
+  <title>随机单词</title>
   <style>
     :root {
       --bg: #f4f6fb;
@@ -1136,7 +1136,7 @@
     .memory-scatter {
       position: relative;
       height: 116px;
-      overflow: hidden;
+      overflow: visible;
       border: 1px solid #dbe4f0;
       border-radius: 14px;
       background:
@@ -1201,12 +1201,99 @@
       transform: translate(-50%, -50%);
     }
 
+    .memory-scatter-point::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      z-index: 5;
+      bottom: calc(100% + 9px);
+      left: 50%;
+      max-width: 220px;
+      padding: 7px 9px;
+      border: 1px solid rgba(15,23,42,.10);
+      border-radius: 10px;
+      color: #166534;
+      background: rgba(240,253,244,.99);
+      box-shadow: 0 12px 28px rgba(22,101,52,.16);
+      font-size: 11px;
+      font-weight: 850;
+      line-height: 1.35;
+      opacity: 0;
+      overflow-wrap: anywhere;
+      pointer-events: none;
+      transform: translate(-50%, 4px);
+      transition: opacity .12s, transform .12s;
+      white-space: normal;
+      width: max-content;
+    }
+
+    .memory-scatter-point::before {
+      content: "";
+      position: absolute;
+      z-index: 5;
+      bottom: calc(100% + 4px);
+      left: 50%;
+      width: 8px;
+      height: 8px;
+      background: rgba(240,253,244,.99);
+      border-right: 1px solid rgba(34,197,94,.20);
+      border-bottom: 1px solid rgba(34,197,94,.20);
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(-50%, 4px) rotate(45deg);
+      transition: opacity .12s, transform .12s;
+    }
+
+    .memory-scatter-point:hover,
+    .memory-scatter-point:focus-visible {
+      z-index: 6;
+      outline: none;
+    }
+
+    .memory-scatter-point.near-top::after {
+      top: calc(100% + 9px);
+      bottom: auto;
+      transform: translate(-50%, -4px);
+    }
+
+    .memory-scatter-point.near-top::before {
+      top: calc(100% + 4px);
+      bottom: auto;
+      border: 0;
+      border-top: 1px solid rgba(15,23,42,.10);
+      border-left: 1px solid rgba(15,23,42,.10);
+      transform: translate(-50%, -4px) rotate(45deg);
+    }
+
+    .memory-scatter-point:hover::after,
+    .memory-scatter-point:focus-visible::after {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    .memory-scatter-point:hover::before,
+    .memory-scatter-point:focus-visible::before {
+      opacity: 1;
+      transform: translate(-50%, 0) rotate(45deg);
+    }
+
     .memory-scatter-point.fail {
       background: #ef4444;
     }
 
+    .memory-scatter-point.fail::after {
+      color: #991b1b;
+      border-color: rgba(239,68,68,.20);
+      background: rgba(254,242,242,.99);
+      box-shadow: 0 12px 28px rgba(127,29,29,.16);
+    }
+
+    .memory-scatter-point.fail::before {
+      background: rgba(254,242,242,.99);
+      border-color: rgba(239,68,68,.20);
+    }
+
     .memory-scatter-point.starred {
-      background: var(--star);
+      background: #ef4444;
     }
 
     .memory-axis-labels {
@@ -1610,7 +1697,7 @@
         <div class="memory-distribution-head">
           <div>
             <p class="memory-distribution-title">反应时间散点图</p>
-            <div id="memoryDistributionMeta" class="memory-distribution-meta">每个有记录的单词显示一次，位置取最近三次中位数。</div>
+            <div id="memoryDistributionMeta" class="memory-distribution-meta">每个有记录的单词显示一次，位置取最近三次反应。</div>
           </div>
           <label class="memory-threshold-control" for="memoryPassSlider">
             <span class="memory-threshold-label">
@@ -3181,15 +3268,16 @@
     memoryPassValue.textContent = formatSeconds(distribution.threshold);
     const stdText = Number.isFinite(distribution.std) ? formatSeconds(distribution.std) : '暂无';
     const meanText = Number.isFinite(distribution.mean) ? formatSeconds(distribution.mean) : '暂无';
-    memoryDistributionMeta.textContent = `每个单词一个点；位置取最近三次中位数。平均 ${meanText} · 标准差 ${stdText} · 超过 ${formatSeconds(distribution.threshold)} 不及格`;
+    memoryDistributionMeta.textContent = `每个单词一个点；位置取最近三次反应。平均 ${meanText} · 标准差 ${stdText} · 超过 ${formatSeconds(distribution.threshold)} 不及格`;
     memoryScatterEmpty.hidden = Boolean(distribution.points.length);
     memoryScatterPoints.innerHTML = distribution.points.map((point, index) => {
       const x = clamp((Math.min(point.duration, SCATTER_MAX_SECONDS) / SCATTER_MAX_SECONDS) * 100, 0, 100);
       const y = 18 + ((index * 37) % 70);
       const failed = point.starred || point.hasIncorrect || point.duration > distribution.threshold;
-      const className = `memory-scatter-point${failed ? ' fail' : ''}${point.starred ? ' starred' : ''}`;
-      const title = `${point.card.text} · 中位数 ${formatSeconds(point.duration)}${failed ? ' · 不达标' : ' · 达标'}`;
-      return `<span class="${className}" style="--point-x: ${x}%; --point-y: ${y}%;" title="${escapeHtml(title)}"></span>`;
+      const className = `memory-scatter-point${failed ? ' fail' : ''}${point.starred ? ' starred' : ''}${y < 30 ? ' near-top' : ''}`;
+      const chinese = getChineseForCard(point.card) || '无中文';
+      const title = `${point.card.text} · ${chinese} · ${formatSeconds(point.duration)} · ${failed ? '不达标' : '达标'}`;
+      return `<span class="${className}" style="--point-x: ${x}%; --point-y: ${y}%;" data-tooltip="${escapeHtml(title)}" aria-label="${escapeHtml(title)}" tabindex="0"></span>`;
     }).join('');
   }
 
