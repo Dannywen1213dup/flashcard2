@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>随机单词</title>
+  <title>随机单词卡</title>
   <style>
     :root {
       --bg: #f4f6fb;
@@ -1564,7 +1564,7 @@
       <div class="button-row">
         <button id="loadBtn" class="primary-btn" type="button">加载并随机抽选 →</button>
         <button id="orderBtn" class="secondary-btn" type="button" title="从第一行开始按顺序出卡">顺序出卡</button>
-        <button id="pairShuffleBtn" class="secondary-btn" type="button" title="严格按每两行一组进行随机排列">中英成对打乱</button>
+        <button id="pairShuffleBtn" class="secondary-btn" type="button" title="保持英文和中文成对，并把相邻近义词尽量拉开">中英成对打乱</button>
         <button id="smartStudyBtn" class="smart-btn" type="button" title="读取普通中英词对或看板历史数据，按当前顺序学习一遍后进入 5 秒测试">智能学习</button>
       </div>
       <div id="loadStatus" class="status"></div>
@@ -2118,9 +2118,29 @@
   }
 
   function shuffleInPairs(cards) {
-    const chunks = [];
-    for (let i = 0; i < cards.length; i += 2) chunks.push(cards.slice(i, i + 2));
-    return shuffle(chunks).flat();
+    const pairs = [];
+    const tail = [];
+    for (let i = 0; i < cards.length; i += 2) {
+      const chunk = cards.slice(i, i + 2);
+      if (chunk.length === 2) pairs.push(chunk);
+      else tail.push(chunk);
+    }
+    if (pairs.length <= 1) return pairs.concat(tail).flat();
+
+    const synonymGroups = [];
+    for (let i = 0; i < pairs.length; i += 2) {
+      synonymGroups.push(pairs.slice(i, i + 2));
+    }
+
+    const orderedGroups = shuffle(synonymGroups).map(group => shuffle(group));
+    const firstLane = orderedGroups.map(group => group[0]).filter(Boolean);
+    const secondLaneSource = orderedGroups.map(group => group[1]).filter(Boolean);
+    const rotation = secondLaneSource.length <= 2 ? 0 : Math.floor(secondLaneSource.length / 2);
+    const secondLane = secondLaneSource
+      .slice(rotation)
+      .concat(secondLaneSource.slice(0, rotation));
+
+    return firstLane.concat(secondLane, tail).flat();
   }
 
   function smartShuffle(cards) {
@@ -2903,7 +2923,7 @@
       currentIndex = deck.length ? 0 : -1;
       const pairCount = Math.floor(sourceCards.length / 2);
       const hasSingleTail = sourceCards.length % 2 === 1;
-      loadStatus.textContent = `已按每两行一组随机排列，共 ${pairCount} 组${hasSingleTail ? '，最后一行单独保留' : ''}。${importedStatusText(bundle)}`;
+      loadStatus.textContent = `已保持中英成对，并按“每两个词对为一组近义词”尽量拉开距离，共 ${pairCount} 个词对${hasSingleTail ? '，最后一行单独保留' : ''}。${importedStatusText(bundle)}`;
     });
   }
 
