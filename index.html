@@ -1,7 +1,8 @@
 <!DOCTYPE html>
-<html lang="zh-CN"><head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>随机单词卡</title>
   <style>
     :root {
@@ -1026,6 +1027,15 @@
       background: rgba(34,197,94,.22);
     }
 
+    .memory-board-row.starred::before {
+      width: 100%;
+      background: rgba(239,68,68,.13);
+    }
+
+    .memory-board-row.starred:hover::before {
+      background: rgba(239,68,68,.18);
+    }
+
     .memory-board-row td {
       position: relative;
       z-index: 1;
@@ -1354,14 +1364,14 @@
 
       <div class="card-wrap">
         <article id="wordCard" class="word-card" aria-live="polite">
-          <span id="memoryScore" class="memory-score" hidden="">记忆 --</span>
-          <div id="memoryTimes" class="memory-times" hidden=""></div>
-          <span id="studyPhaseBadge" class="study-phase-badge" hidden=""></span>
+          <span id="memoryScore" class="memory-score" hidden>记忆 --</span>
+          <div id="memoryTimes" class="memory-times" hidden></div>
+          <span id="studyPhaseBadge" class="study-phase-badge" hidden></span>
           <span class="star-badge" aria-hidden="true">★</span>
           <span id="passFeedback" class="pass-feedback" aria-hidden="true">通过</span>
           <div id="wordDisplay" class="empty-text">请先在左侧输入内容并点击加载</div>
-          <div id="studyChinese" class="study-chinese" hidden=""></div>
-          <div id="studyInstruction" class="study-instruction" hidden=""></div>
+          <div id="studyChinese" class="study-chinese" hidden></div>
+          <div id="studyInstruction" class="study-instruction" hidden></div>
         </article>
       </div>
 
@@ -1373,7 +1383,7 @@
         </div>
         <label class="auto-toggle" for="autoToggle" title="开启后，倒计时到 0 时自动给当前卡片添加星标">
           <span class="auto-label">Auto</span>
-          <input id="autoToggle" type="checkbox" role="switch" aria-label="倒计时结束自动星标">
+          <input id="autoToggle" type="checkbox" role="switch" aria-label="倒计时结束自动星标" />
           <span class="switch-track" aria-hidden="true"><span class="switch-knob"></span></span>
         </label>
       </div>
@@ -1405,7 +1415,7 @@
         <h2 class="unknown-title">不会的 List ★</h2>
         <button id="copyBtn" class="copy-btn" type="button">复制全部</button>
       </div>
-      <textarea id="unknownList" readonly="" spellcheck="false" placeholder="按 W 星标的内容会出现在这里，每行一个。"></textarea>
+      <textarea id="unknownList" readonly spellcheck="false" placeholder="按 W 星标的内容会出现在这里，每行一个。"></textarea>
       <div class="unknown-actions">
         <button id="addChineseBtn" class="small-btn" type="button" title="给已星标英文自动补上其下一行中文">一键加中文</button>
         <button id="selectBtn" class="small-btn" type="button">全选文本</button>
@@ -1416,15 +1426,15 @@
   </main>
 
   <nav class="mobile-tabbar" aria-label="手机端页面切换">
-    <button class="mobile-tab" type="button" data-tab-target="words" aria-label="打开单词列表" aria-current="false">
+    <button class="mobile-tab" type="button" data-tab-target="words" aria-label="打开单词列表">
       <span class="mobile-tab-icon" aria-hidden="true">☰</span>
       <span>单词列表</span>
     </button>
-    <button class="mobile-tab active" type="button" data-tab-target="home" aria-label="打开主页" aria-current="page">
+    <button class="mobile-tab active" type="button" data-tab-target="home" aria-label="打开主页">
       <span class="mobile-tab-icon" aria-hidden="true">▣</span>
       <span>主页</span>
     </button>
-    <button class="mobile-tab" type="button" data-tab-target="unknown" aria-label="打开不会的列表" aria-current="false">
+    <button class="mobile-tab" type="button" data-tab-target="unknown" aria-label="打开不会的列表">
       <span class="mobile-tab-icon" aria-hidden="true">★</span>
       <span>不会的 List</span>
     </button>
@@ -1564,7 +1574,6 @@
       learnAttempts: new Map(),
       phaseBaseline: null,
       phaseThreshold: null,
-      previewMaxIndex: -1,
       revealed: false,
       completionMessage: ''
     };
@@ -1798,6 +1807,30 @@
     return result;
   }
 
+  function countChangedPositions(original, candidate) {
+    return candidate.reduce((count, pair, index) => (
+      original[index] && original[index].key !== pair.key ? count + 1 : count
+    ), 0);
+  }
+
+  function shuffleForSmartTest(pairs) {
+    if (pairs.length <= 1) return [...pairs];
+    const targetChanged = Math.ceil(pairs.length * 0.6);
+    let best = [...pairs];
+    let bestChanged = 0;
+
+    for (let attempt = 0; attempt < 120; attempt += 1) {
+      const candidate = shuffle(pairs);
+      const changed = countChangedPositions(pairs, candidate);
+      if (changed > bestChanged) {
+        best = candidate;
+        bestChanged = changed;
+      }
+      if (changed >= targetChanged) return candidate;
+    }
+    return best;
+  }
+
   function hasEnglishChinesePairs(cards) {
     if (cards.length < 2) return false;
     let completePairs = 0;
@@ -1921,14 +1954,34 @@
     return sourceCards.some(card => card.memoryKey === memoryKey && starredIds.has(card.id));
   }
 
+  function scoreUpPercentFromRecords(records) {
+    const recentCorrect = records.filter(record => !record.incorrect).slice(-3);
+    if (recentCorrect.length < 3 || recentCorrect.some(record => record.duration > SMART_PASS_SECONDS)) return null;
+    const veryFastCount = recentCorrect.filter(record => record.duration <= 3).length;
+    return veryFastCount >= 2 ? 100 : 80;
+  }
+
+  function clearStarredByMemoryKey(memoryKey) {
+    sourceCards.forEach(card => {
+      if (card.memoryKey === memoryKey) starredIds.delete(card.id);
+    });
+  }
+
   function calculateMemoryPercent(card) {
     if (!card || card.virtual || !containsEnglish(card.text)) return null;
-    if (starredIds.has(card.id)) return 0;
+    const starred = starredIds.has(card.id);
     const entry = getMemoryEntry(card, false);
-    const recent = validRecords(entry).slice(-3).reverse();
-    if (!recent.length) {
-      return entry && Number.isFinite(entry.importedScore) ? entry.importedScore : null;
+    const records = validRecords(entry);
+    const recent = records.slice(-3).reverse();
+    if (!records.length) {
+      return starred ? 0 : entry && Number.isFinite(entry.importedScore) ? entry.importedScore : null;
     }
+
+    const scoreUpPercent = scoreUpPercentFromRecords(records);
+    if (scoreUpPercent !== null) return scoreUpPercent;
+
+    if (starred) return 0;
+
     const average = getAdaptiveAverage();
     const weights = [0.5, 0.3, 0.2];
     let totalWeight = 0;
@@ -2066,6 +2119,9 @@
     entry.updatedAt = Date.now();
     outcome.record = record;
     outcome.stored = true;
+    if (!record.incorrect && scoreUpPercentFromRecords(validRecords(entry)) !== null) {
+      clearStarredByMemoryKey(card.memoryKey);
+    }
     if (!record.incorrect && ['next', 'previous', 'smart-next', 'smart-previous'].includes(reason)) {
       lastCorrectPassByKey.set(card.memoryKey, {
         record,
@@ -2371,7 +2427,6 @@
     smartState.revealed = false;
     deck = buildAdaptiveLearningDeck(pairs);
     currentIndex = deck.length ? 0 : -1;
-    smartState.previewMaxIndex = currentIndex;
     return deck.length;
   }
 
@@ -2444,12 +2499,9 @@
   function render() {
     const card = currentCard();
     const starredCards = sourceCards.filter(item => starredIds.has(item.id));
-    const previewIndex = smartState.active
-      ? Math.max(currentIndex, Math.min(smartState.previewMaxIndex, deck.length - 1))
-      : currentIndex;
 
     totalCount.textContent = deck.length;
-    currentCount.textContent = deck.length ? `${previewIndex + 1} / ${deck.length}` : '0 / 0';
+    currentCount.textContent = deck.length ? `${currentIndex + 1} / ${deck.length}` : '0 / 0';
     starredCount.textContent = starredCards.length;
     unstarredCount.textContent = Math.max(0, deck.length - starredCards.length);
     unknownList.value = starredCards.map(item => item.text).join('\n');
@@ -2596,12 +2648,11 @@
     smartState.revealed = false;
     // 测试前清掉本轮复习中的星标，给每个词一次重新证明“已经会了”的机会。
     smartState.workingPairs.forEach(pair => starredIds.delete(pair.english.id));
-    smartState.workingPairs = [...smartState.workingPairs];
+    smartState.workingPairs = shuffleForSmartTest(smartState.workingPairs);
     smartState.phaseBaseline = getAdaptiveAverage();
     smartState.phaseThreshold = SMART_PASS_SECONDS;
     deck = cardsFromStudyPairs(smartState.workingPairs);
     currentIndex = 0;
-    smartState.previewMaxIndex = currentIndex;
     loadStatus.textContent = `第 ${smartState.round} 轮复习完成，进入测试。5 秒内切到下一个算通过；自己点击或 Tab 查看中文算错，按下一个后自动显示中文 2 秒不算错。`;
     render();
     resetTimer();
@@ -2713,7 +2764,6 @@
 
       if (currentIndex < deck.length - 1) {
         currentIndex += 1;
-        smartState.previewMaxIndex = Math.max(smartState.previewMaxIndex, currentIndex);
         smartState.revealed = false;
         render();
         resetTimer();
@@ -2897,17 +2947,18 @@
       const entry = getMemoryEntry(card, false);
       const records = validRecords(entry);
       const recent = records.slice(-3).reverse();
-      const percent = isCardStarredByMemoryKey(card.memoryKey) ? 0 : calculateMemoryPercent(card);
+      const percent = calculateMemoryPercent(card);
+      const starred = isCardStarredByMemoryKey(card.memoryKey);
       const fillPercent = percent === null ? 0 : clamp(percent, 0, 100);
       const recentText = recent.length
         ? recent.map(record => `${record.incorrect ? '× ' : ''}${formatSeconds(record.duration)}`).join(' / ')
         : '暂无';
-      const status = isCardStarredByMemoryKey(card.memoryKey)
+      const status = starred
         ? '已星标，不认识'
         : records.some(record => record.incorrect)
           ? '包含纠错记录'
           : records.length ? '正常记录' : '未记录';
-      return `<tr class="memory-board-row" style="--memory-fill: ${fillPercent}%;">
+      return `<tr class="memory-board-row${starred ? ' starred' : ''}" style="--memory-fill: ${fillPercent}%;">
         <td class="memory-board-word">${escapeHtml(card.text)}</td>
         <td>${escapeHtml(getChineseForCard(card) || '—')}</td>
         <td class="memory-board-score">${percent === null ? '--' : `${percent}%`}</td>
@@ -2922,7 +2973,7 @@
     const entry = getMemoryEntry(card, false);
     const records = validRecords(entry);
     const starred = isCardStarredByMemoryKey(card.memoryKey);
-    const percent = starred ? 0 : calculateMemoryPercent(card);
+    const percent = calculateMemoryPercent(card);
     return Boolean(starred
       || records.some(record => Number.isFinite(record.duration) && record.duration > SMART_PASS_SECONDS)
       || (percent !== null && percent < 60));
@@ -2947,7 +2998,7 @@
         return `${formatSeconds(record.duration)}${record.incorrect ? '(错误)' : ''}@${time}`;
       }).join(' | ') || '暂无';
       const starred = isCardStarredByMemoryKey(card.memoryKey);
-      const percent = starred ? 0 : calculateMemoryPercent(card);
+      const percent = calculateMemoryPercent(card);
       const status = starred
         ? '已星标，不认识'
         : records.some(record => record.incorrect)
@@ -3142,6 +3193,5 @@
 })();
 
   </script>
-
-
-</body></html>
+</body>
+</html>
