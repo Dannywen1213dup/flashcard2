@@ -218,6 +218,7 @@
       border: 1px solid rgba(255,255,255,0.98);
       border-radius: 30px;
       box-shadow: 0 26px 70px rgba(31,41,55,0.16);
+      touch-action: pan-y;
       user-select: text;
     }
 
@@ -690,10 +691,14 @@
 
       .controls {
         display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         width: 100%;
         flex: 0 0 auto;
         gap: 10px;
+      }
+
+      .controls.buffer-visible {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
       }
 
       .nav-btn,
@@ -1463,7 +1468,7 @@
       flex-direction: column;
       gap: 18px;
       cursor: pointer;
-      touch-action: manipulation;
+      touch-action: pan-y;
     }
 
     .word-card.test-mode {
@@ -1584,6 +1589,13 @@
       }
     }
 
+    @media (pointer: coarse) {
+      .word-card {
+        -webkit-user-select: none;
+        user-select: none;
+      }
+    }
+
   </style>
 </head>
 <body>
@@ -1661,7 +1673,7 @@
         </label>
       </div>
 
-      <div class="controls">
+      <div id="controls" class="controls">
         <button id="prevBtn" class="nav-btn" type="button" aria-label="上一个">
           <span class="desktop-label">− / ← 上一个</span><span class="mobile-label" aria-hidden="true">←</span>
         </button>
@@ -1784,6 +1796,7 @@
   const starBtn = document.getElementById('starBtn');
   const deleteBtn = document.getElementById('deleteBtn');
   const bufferBtn = document.getElementById('bufferBtn');
+  const controls = document.getElementById('controls');
   const copyBtn = document.getElementById('copyBtn');
   const addChineseBtn = document.getElementById('addChineseBtn');
   const selectBtn = document.getElementById('selectBtn');
@@ -1823,6 +1836,7 @@
   const memoryPassSlider = document.getElementById('memoryPassSlider');
   const memoryPassValue = document.getElementById('memoryPassValue');
   const memoryPassLine = document.getElementById('memoryPassLine');
+  const memoryScatter = document.getElementById('memoryScatter');
   const memoryScatterPoints = document.getElementById('memoryScatterPoints');
   const memoryScatterEmpty = document.getElementById('memoryScatterEmpty');
   const memoryBoardBody = document.getElementById('memoryBoardBody');
@@ -1852,6 +1866,8 @@
   let lastLoadedInputSignature = '';
   let suppressNextCardClick = false;
   let navigationSerial = 0;
+  let forwardProgressIndex = -1;
+  let reviewingHistory = false;
   let smartMovePending = false;
   let smartChineseBufferEnabled = true;
   let passFeedbackTimer = null;
@@ -2403,6 +2419,7 @@
   function updateBufferButton() {
     const visible = smartState.active && smartState.phase !== 'complete';
     bufferBtn.classList.toggle('visible', visible);
+    controls.classList.toggle('buffer-visible', visible);
     bufferBtn.classList.toggle('off', !smartChineseBufferEnabled);
     bufferBtn.textContent = `中文缓冲 ${smartChineseBufferEnabled ? 'On' : 'Off'}`;
     bufferBtn.setAttribute('aria-pressed', String(smartChineseBufferEnabled));
@@ -2558,7 +2575,7 @@
 
   function applyAutoStarIfNeeded() {
     const card = currentCard();
-    if (!card || card.virtual || !autoToggle.checked || timerValue > 0 || autoHandledCardId === card.id) return;
+    if (!card || card.virtual || reviewingHistory || !autoToggle.checked || timerValue > 0 || autoHandledCardId === card.id) return;
     if (!starredIds.has(card.id)) {
       starredIds.add(card.id);
       markCurrentVisitUnknown(card, 'auto-star-at-zero');
@@ -2815,6 +2832,8 @@
     smartState.revealed = false;
     deck = buildAdaptiveLearningDeck(pairs);
     currentIndex = deck.length ? 0 : -1;
+    forwardProgressIndex = currentIndex;
+    reviewingHistory = false;
     return deck.length;
   }
 
@@ -2830,6 +2849,8 @@
     memoryStore = createEmptyMemoryStore();
     smartState = createSmartState();
     navigationSerial = 0;
+    forwardProgressIndex = -1;
+    reviewingHistory = false;
     lastCorrectPassByKey.clear();
     copyStatus.textContent = '';
     memoryCopyStatus.textContent = '';
@@ -2878,7 +2899,6 @@
       resumeTiming('memory-board');
     }
     if (mobileMedia.matches) switchMobileTab('words');
-    wordInput.focus();
     return true;
   }
 
@@ -2971,6 +2991,8 @@
       mode = 'random';
       deck = smartShuffle(sourceCards);
       currentIndex = deck.length ? 0 : -1;
+      forwardProgressIndex = currentIndex;
+      reviewingHistory = false;
       const paired = hasEnglishChinesePairs(sourceCards);
       loadStatus.textContent = deck.length
         ? `已加载 ${deck.length} 张卡片，${paired ? '检测到中英配对，已按两行一组随机排列。' : '已完成单卡随机排列。'}${importedStatusText(bundle)}`
@@ -2983,6 +3005,8 @@
       mode = 'sequential';
       deck = [...sourceCards];
       currentIndex = deck.length ? 0 : -1;
+      forwardProgressIndex = currentIndex;
+      reviewingHistory = false;
       loadStatus.textContent = deck.length
         ? `已从头开始按顺序出卡，共 ${deck.length} 张。${importedStatusText(bundle)}`
         : '没有检测到有效内容，请至少输入一行非空文字。';
@@ -2998,6 +3022,8 @@
       mode = 'paired-random';
       deck = shuffleInPairs(sourceCards);
       currentIndex = deck.length ? 0 : -1;
+      forwardProgressIndex = currentIndex;
+      reviewingHistory = false;
       const pairCount = Math.floor(sourceCards.length / 2);
       const hasSingleTail = sourceCards.length % 2 === 1;
       loadStatus.textContent = `已保持中英成对，并按“每两个词对为一组近义词”尽量拉开距离，共 ${pairCount} 个词对${hasSingleTail ? '，最后一行单独保留' : ''}。${importedStatusText(bundle)}`;
@@ -3010,7 +3036,7 @@
     if (!sourceCards.length || signature !== lastLoadedInputSignature) {
       bundle = loadFreshSourceFromInput();
     } else {
-      finishVisit('smart-mode-start');
+      discardVisit();
       smartState = createSmartState();
     }
 
@@ -3081,6 +3107,8 @@
     smartState.phaseThreshold = SMART_PASS_SECONDS;
     deck = cardsFromStudyPairs(smartState.workingPairs);
     currentIndex = 0;
+    forwardProgressIndex = currentIndex;
+    reviewingHistory = false;
     loadStatus.textContent = `第 ${smartState.round} 轮复习完成，进入测试。5 秒内切到下一个算通过；自己点击或 Tab 查看中文算错，按下一个后自动显示中文 2 秒不算错。`;
     render();
     resetTimer();
@@ -3145,6 +3173,8 @@
         memoryKey: 'smart-complete'
       }];
       currentIndex = 0;
+      forwardProgressIndex = currentIndex;
+      reviewingHistory = false;
       smartState.revealed = false;
       loadStatus.textContent = `智能学习完成：共进行 ${smartState.round} 轮，当前批次全部通过。重新点击“加载、顺序或成对打乱”会开始全新批次并清空本批记忆数据。`;
       render();
@@ -3172,16 +3202,20 @@
     const card = currentCard();
     const phaseAtMove = smartState.phase;
     const wasRevealedBeforeMove = smartState.revealed;
-    const outcome = finishVisit(delta > 0 ? 'smart-next' : 'smart-previous');
+    const isCatchUpMove = delta > 0 && reviewingHistory && currentIndex !== forwardProgressIndex;
+    let outcome = null;
+    if (delta < 0 || isCatchUpMove) discardVisit();
+    else outcome = finishVisit('smart-next');
     navigationSerial += 1;
-    if (phaseAtMove === 'test') recordSmartTestAttempt(card, outcome);
-    else if (phaseAtMove === 'learn') recordSmartLearnAttempt(card, outcome);
+    if (outcome && phaseAtMove === 'test') recordSmartTestAttempt(card, outcome);
+    else if (outcome && phaseAtMove === 'learn') recordSmartLearnAttempt(card, outcome);
 
     const completeMove = () => {
       clearPassFeedback();
       smartMovePending = false;
 
       if (delta < 0) {
+        reviewingHistory = true;
         currentIndex = Math.max(0, currentIndex - 1);
         smartState.revealed = false;
         render();
@@ -3192,6 +3226,12 @@
 
       if (currentIndex < deck.length - 1) {
         currentIndex += 1;
+        if (!isCatchUpMove) {
+          forwardProgressIndex = currentIndex;
+          reviewingHistory = false;
+        } else if (currentIndex === forwardProgressIndex) {
+          reviewingHistory = true;
+        }
         smartState.revealed = false;
         render();
         resetTimer();
@@ -3203,7 +3243,7 @@
       else finishSmartTestPhase();
     };
 
-    if (delta > 0 && phaseAtMove === 'learn' && smartChineseBufferEnabled && !wasRevealedBeforeMove) {
+    if (delta > 0 && !isCatchUpMove && phaseAtMove === 'learn' && smartChineseBufferEnabled && !wasRevealedBeforeMove) {
       smartMovePending = true;
       smartState.revealed = true;
       stopTimer();
@@ -3212,7 +3252,7 @@
       return;
     }
 
-    if (delta > 0 && phaseAtMove === 'test') {
+    if (delta > 0 && !isCatchUpMove && phaseAtMove === 'test') {
       smartMovePending = true;
       smartState.revealed = true;
       stopTimer();
@@ -3231,9 +3271,22 @@
       moveSmart(delta);
       return;
     }
-    finishVisit(delta > 0 ? 'next' : 'previous');
+    const isCatchUpMove = delta > 0 && reviewingHistory && currentIndex !== forwardProgressIndex;
+    if (delta < 0 || isCatchUpMove) discardVisit();
+    else finishVisit('next');
     navigationSerial += 1;
     currentIndex = (currentIndex + delta + deck.length) % deck.length;
+    if (delta < 0) {
+      reviewingHistory = true;
+    } else if (!isCatchUpMove) {
+      if (currentIndex === 0) {
+        // 从最后一张右翻回第一张，此时才开始新一圈记录。
+        forwardProgressIndex = 0;
+      } else {
+        forwardProgressIndex = currentIndex;
+      }
+      reviewingHistory = false;
+    }
     render();
     resetTimer();
     startVisit();
@@ -3258,7 +3311,8 @@
       return;
     }
 
-    finishVisit('delete');
+    const deletedDeckIndex = currentIndex;
+    discardVisit();
     const deletedText = card.text;
     const idsToDelete = new Set([card.id]);
     if (smartState.active) {
@@ -3281,6 +3335,13 @@
     lastLoadedInputSignature = inputSignature(wordInput.value);
     if (!deck.length) currentIndex = -1;
     else if (currentIndex >= deck.length) currentIndex = deck.length - 1;
+    if (!deck.length) {
+      forwardProgressIndex = -1;
+      reviewingHistory = false;
+    } else {
+      if (deletedDeckIndex < forwardProgressIndex) forwardProgressIndex -= 1;
+      forwardProgressIndex = clamp(forwardProgressIndex, 0, deck.length - 1);
+    }
     loadStatus.textContent = `已删除“${deletedText}”，当前批次和左侧列表已同步更新。`;
     render();
     resetTimer();
@@ -3357,6 +3418,48 @@
       .replace(/'/g, '&#039;');
   }
 
+  function layoutMemoryScatterPoints(points) {
+    const proximity = 2.25;
+    const plotted = points.map((point, index) => ({
+      point,
+      index,
+      x: clamp((Math.min(point.duration, SCATTER_MAX_SECONDS) / SCATTER_MAX_SECONDS) * 100, 0, 100)
+    }));
+    const maxNearby = plotted.reduce((maximum, item) => {
+      const nearby = plotted.filter(other => Math.abs(other.x - item.x) <= proximity).length;
+      return Math.max(maximum, nearby);
+    }, 0);
+    const laneCount = clamp(maxNearby, 5, 15);
+    const lanes = Array.from({ length: laneCount }, (_, lane) => (
+      laneCount === 1 ? 50 : 10 + (lane * 80) / (laneCount - 1)
+    ));
+    const positioned = [];
+    const layouts = new Array(plotted.length);
+
+    [...plotted].sort((a, b) => a.x - b.x || a.index - b.index).forEach(item => {
+      const nearby = positioned.filter(other => Math.abs(other.x - item.x) <= proximity);
+      const preferredLane = Math.floor((((item.index + 1) * 0.61803398875) % 1) * laneCount);
+      let bestLane = preferredLane;
+      let bestClearance = -1;
+
+      lanes.forEach((y, lane) => {
+        const clearance = nearby.length
+          ? Math.min(...nearby.map(other => Math.abs(other.y - y)))
+          : lane === preferredLane ? Number.POSITIVE_INFINITY : 0;
+        if (clearance > bestClearance) {
+          bestClearance = clearance;
+          bestLane = lane;
+        }
+      });
+
+      const layout = { ...item, y: lanes[bestLane] };
+      positioned.push(layout);
+      layouts[item.index] = layout;
+    });
+
+    return { layouts, maxNearby };
+  }
+
   function renderMemoryScatter(cards, distribution) {
     const thresholdLeft = clamp((distribution.threshold / SCATTER_MAX_SECONDS) * 100, 0, 100);
     memoryPassLine.style.setProperty('--pass-left', `${thresholdLeft}%`);
@@ -3367,9 +3470,11 @@
     const meanText = Number.isFinite(distribution.mean) ? formatSeconds(distribution.mean) : '暂无';
     memoryDistributionMeta.textContent = `每个单词一个点；位置取最近三次反应。平均 ${meanText} · 标准差 ${stdText} · 超过 ${formatSeconds(distribution.threshold)} 不及格`;
     memoryScatterEmpty.hidden = Boolean(distribution.points.length);
-    memoryScatterPoints.innerHTML = distribution.points.map((point, index) => {
-      const x = clamp((Math.min(point.duration, SCATTER_MAX_SECONDS) / SCATTER_MAX_SECONDS) * 100, 0, 100);
-      const y = 18 + ((index * 37) % 70);
+    const scatterLayout = layoutMemoryScatterPoints(distribution.points);
+    const baseHeight = mobileMedia.matches ? 104 : 116;
+    const collisionHeight = 42 + Math.min(scatterLayout.maxNearby, 15) * 13;
+    memoryScatter.style.height = `${Math.max(baseHeight, collisionHeight)}px`;
+    memoryScatterPoints.innerHTML = scatterLayout.layouts.map(({ point, x, y }) => {
       const failed = point.starred || point.hasIncorrect || point.duration > distribution.threshold;
       const className = `memory-scatter-point${failed ? ' fail' : ''}${point.starred ? ' starred' : ''}${y < 30 ? ' near-top' : ''}`;
       const chinese = getChineseForCard(point.card) || '无中文';
@@ -3604,23 +3709,45 @@
     revealSmartChinese();
   });
 
-  let touchStartX = 0;
-  let touchStartY = 0;
-  wordCard.addEventListener('touchstart', event => {
-    const touch = event.changedTouches[0];
-    touchStartX = touch.clientX;
-    touchStartY = touch.clientY;
-  }, { passive: true });
+  let swipeStart = null;
 
-  wordCard.addEventListener('touchend', event => {
-    const touch = event.changedTouches[0];
-    const deltaX = touch.clientX - touchStartX;
-    const deltaY = touch.clientY - touchStartY;
-    if (Math.abs(deltaX) < 55 || Math.abs(deltaX) < Math.abs(deltaY) * 1.25) return;
+  function beginCardSwipe(clientX, clientY, pointerId = null) {
+    swipeStart = { clientX, clientY, pointerId };
+  }
+
+  function finishCardSwipe(clientX, clientY, pointerId = null) {
+    if (!swipeStart || (swipeStart.pointerId !== null && swipeStart.pointerId !== pointerId)) return false;
+    const deltaX = clientX - swipeStart.clientX;
+    const deltaY = clientY - swipeStart.clientY;
+    swipeStart = null;
+    if (Math.abs(deltaX) < 48 || Math.abs(deltaX) < Math.abs(deltaY) * 1.15) return false;
     suppressNextCardClick = true;
     move(deltaX < 0 ? 1 : -1);
     window.setTimeout(() => { suppressNextCardClick = false; }, 350);
-  }, { passive: true });
+    return true;
+  }
+
+  if ('PointerEvent' in window) {
+    wordCard.addEventListener('pointerdown', event => {
+      if (event.pointerType === 'mouse') return;
+      beginCardSwipe(event.clientX, event.clientY, event.pointerId);
+      if (wordCard.setPointerCapture) wordCard.setPointerCapture(event.pointerId);
+    });
+    wordCard.addEventListener('pointerup', event => {
+      if (finishCardSwipe(event.clientX, event.clientY, event.pointerId)) event.preventDefault();
+    });
+    wordCard.addEventListener('pointercancel', () => { swipeStart = null; });
+  } else {
+    wordCard.addEventListener('touchstart', event => {
+      const touch = event.changedTouches[0];
+      beginCardSwipe(touch.clientX, touch.clientY);
+    }, { passive: true });
+    wordCard.addEventListener('touchend', event => {
+      const touch = event.changedTouches[0];
+      finishCardSwipe(touch.clientX, touch.clientY);
+    }, { passive: true });
+    wordCard.addEventListener('touchcancel', () => { swipeStart = null; }, { passive: true });
+  }
 
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) suspendTiming('document-hidden');
