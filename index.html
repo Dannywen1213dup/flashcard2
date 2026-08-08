@@ -67,11 +67,31 @@
       padding: 20px;
     }
 
-    .title {
+    .title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
       margin: 0 0 6px;
+    }
+
+    .title {
+      margin: 0;
       font-size: 22px;
       font-weight: 800;
       letter-spacing: -0.02em;
+    }
+
+    .clear-input-btn {
+      flex: 0 0 auto;
+      padding: 8px 11px;
+      border: 1px solid #fecaca;
+      border-radius: 11px;
+      color: #b91c1c;
+      background: #fff1f2;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
     }
 
     .hint {
@@ -1018,34 +1038,28 @@
     }
 
     .memory-board-row {
-      position: relative;
+      background: linear-gradient(
+        90deg,
+        rgba(34,197,94,.16) 0 var(--memory-fill, 0%),
+        rgba(255,255,255,0) var(--memory-fill, 0%) 100%
+      );
     }
 
-    .memory-board-row::before {
-      content: "";
-      position: absolute;
-      inset: 0 auto 0 0;
-      width: var(--memory-fill, 0%);
-      background: rgba(34,197,94,.16);
-      pointer-events: none;
+    .memory-board-row:hover {
+      background: linear-gradient(
+        90deg,
+        rgba(34,197,94,.22) 0 var(--memory-fill, 0%),
+        rgba(248,250,252,.72) var(--memory-fill, 0%) 100%
+      );
     }
 
-    .memory-board-row:hover::before {
-      background: rgba(34,197,94,.22);
-    }
-
-    .memory-board-row.starred::before {
-      width: 100%;
+    .memory-board-row.starred,
+    .memory-board-row.starred:hover {
       background: rgba(239,68,68,.13);
     }
 
-    .memory-board-row.starred:hover::before {
-      background: rgba(239,68,68,.18);
-    }
-
+    .memory-board tbody td,
     .memory-board-row td {
-      position: relative;
-      z-index: 1;
       background: transparent;
     }
 
@@ -1561,7 +1575,10 @@
 <body>
   <main class="app">
     <section class="panel input-panel" data-mobile-page="words">
-      <h1 class="title">单词列表</h1>
+      <div class="title-row">
+        <h1 class="title">单词列表</h1>
+        <button id="clearInputBtn" class="clear-input-btn" type="button">清空</button>
+      </div>
       <p class="hint">支持两种输入：① 英文一行、中文一行；② 直接粘贴含“单词 / 中文 / 记忆程度 / 反应时间”的看板数据。智能学习会按当前顺序学习一遍，再进入 5 秒测试。</p>
       <textarea id="wordInput" spellcheck="false" placeholder="例如：\nabandon\n放弃\nmeticulous\n一丝不苟的"></textarea>
       <div class="button-row">
@@ -1743,6 +1760,7 @@
 (() => {
   const wordInput = document.getElementById('wordInput');
   const loadBtn = document.getElementById('loadBtn');
+  const clearInputBtn = document.getElementById('clearInputBtn');
   const orderBtn = document.getElementById('orderBtn');
   const pairShuffleBtn = document.getElementById('pairShuffleBtn');
   const smartStudyBtn = document.getElementById('smartStudyBtn');
@@ -2817,6 +2835,17 @@
     return bundle;
   }
 
+  function clearWordList() {
+    wordInput.value = '';
+    resetSessionData();
+    lastLoadedInputSignature = '';
+    loadStatus.textContent = '单词列表已清空。';
+    render();
+    resetTimer();
+    if (mobileMedia.matches) switchMobileTab('words');
+    wordInput.focus();
+  }
+
   function importedStatusText(bundle) {
     return bundle.dashboardDetected
       ? `已识别看板数据并导入 ${bundle.importedCount} 个英文单词的历史记录。`
@@ -3487,6 +3516,7 @@
   });
 
   loadBtn.addEventListener('click', loadWords);
+  clearInputBtn.addEventListener('click', clearWordList);
   orderBtn.addEventListener('click', startInOrder);
   pairShuffleBtn.addEventListener('click', reshuffleInPairs);
   smartStudyBtn.addEventListener('click', startSmartLearning);
