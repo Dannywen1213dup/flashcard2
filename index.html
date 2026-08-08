@@ -1387,13 +1387,27 @@
       }
 
       .memory-modal-header {
-        grid-template-columns: auto 1fr auto;
+        grid-template-columns: 1fr auto;
         gap: 8px;
         padding: 12px;
       }
 
+      .memory-modal-title-wrap {
+        grid-column: 1;
+        grid-row: 1;
+      }
+
+      .memory-close-btn {
+        grid-column: 2;
+        grid-row: 1;
+      }
+
       .memory-copy-actions {
-        max-width: 118px;
+        grid-column: 1 / -1;
+        grid-row: 2;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        width: 100%;
         gap: 6px;
       }
 
@@ -1677,7 +1691,7 @@
       <textarea id="unknownList" readonly spellcheck="false" placeholder="按 W 星标的内容会出现在这里，每行一个。"></textarea>
       <div class="unknown-actions">
         <button id="addChineseBtn" class="small-btn" type="button" title="给已星标英文自动补上其下一行中文">一键加中文</button>
-        <button id="selectBtn" class="small-btn" type="button">全选文本</button>
+        <button id="selectBtn" class="small-btn" type="button">重新加入list</button>
         <button id="clearStarsBtn" class="small-btn" type="button">清空星标</button>
       </div>
       <div id="copyStatus" class="status"></div>
@@ -1706,6 +1720,7 @@
         <div class="memory-copy-actions">
           <button id="memoryCopyBtn" class="memory-copy-btn" type="button">复制全部</button>
           <button id="memoryCopyWrongBtn" class="memory-copy-btn secondary" type="button">复制错词</button>
+          <button id="memoryWrongToListBtn" class="memory-copy-btn secondary" type="button">错词加入list</button>
         </div>
         <div class="memory-modal-title-wrap">
           <h2 id="memoryModalTitle" class="memory-modal-title">单词记忆看板</h2>
@@ -1802,6 +1817,7 @@
   const memoryCloseBtn = document.getElementById('memoryCloseBtn');
   const memoryCopyBtn = document.getElementById('memoryCopyBtn');
   const memoryCopyWrongBtn = document.getElementById('memoryCopyWrongBtn');
+  const memoryWrongToListBtn = document.getElementById('memoryWrongToListBtn');
   const memoryModalSummary = document.getElementById('memoryModalSummary');
   const memoryDistributionMeta = document.getElementById('memoryDistributionMeta');
   const memoryPassSlider = document.getElementById('memoryPassSlider');
@@ -2846,6 +2862,35 @@
     wordInput.focus();
   }
 
+  function replaceWordListWithText(text, statusText) {
+    const nextText = String(text || '').trim();
+    if (!nextText) return false;
+    wordInput.value = nextText;
+    resetSessionData();
+    wordInput.value = nextText;
+    lastLoadedInputSignature = '';
+    loadStatus.textContent = statusText;
+    render();
+    resetTimer();
+    if (memoryModal.classList.contains('open')) {
+      memoryModal.classList.remove('open');
+      memoryModal.setAttribute('aria-hidden', 'true');
+      resumeTiming('memory-board');
+    }
+    if (mobileMedia.matches) switchMobileTab('words');
+    wordInput.focus();
+    return true;
+  }
+
+  function rejoinUnknownList() {
+    const text = unknownList.value;
+    if (!text.trim()) {
+      copyStatus.textContent = '当前没有星标内容。';
+      return;
+    }
+    replaceWordListWithText(text, '已清空原单词列表，并把不会的 list 重新加入左侧列表。');
+  }
+
   function importedStatusText(bundle) {
     return bundle.dashboardDetected
       ? `已识别看板数据并导入 ${bundle.importedCount} 个英文单词的历史记录。`
@@ -3514,6 +3559,17 @@
       ? `已复制 ${cards.length} 个错词：超过当前及格线、星标或包含纠错记录的词。`
       : '复制失败，请稍后重试。';
   });
+  memoryWrongToListBtn.addEventListener('click', () => {
+    const cards = wrongMemoryCards();
+    if (!cards.length) {
+      memoryCopyStatus.textContent = '当前没有符合条件的错词。';
+      return;
+    }
+    replaceWordListWithText(
+      buildMemoryExport(cards),
+      `已清空原单词列表，并把 ${cards.length} 个看板错词加入左侧列表。`
+    );
+  });
 
   loadBtn.addEventListener('click', loadWords);
   clearInputBtn.addEventListener('click', clearWordList);
@@ -3531,11 +3587,7 @@
   copyBtn.addEventListener('click', copyUnknowns);
   addChineseBtn.addEventListener('click', addMatchedChinese);
 
-  selectBtn.addEventListener('click', () => {
-    unknownList.focus();
-    unknownList.select();
-    copyStatus.textContent = unknownList.value ? '已全选，可以按 Ctrl/Cmd + C 复制。' : '当前没有星标内容。';
-  });
+  selectBtn.addEventListener('click', rejoinUnknownList);
 
   clearStarsBtn.addEventListener('click', () => {
     starredIds.clear();
